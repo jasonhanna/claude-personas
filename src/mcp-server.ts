@@ -2,6 +2,7 @@ import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import { PersonaConfig } from './base-agent-server.js';
+import { AgentError, ValidationError, ConfigurationError, CommunicationError } from './errors.js';
 
 export interface ToolCallHandler {
   (name: string, args: any): Promise<any>;
@@ -38,11 +39,29 @@ export class MCPServer {
       console.error(logMsg);
       process.stderr.write(logMsg + '\n');
       
-      if (!this.toolsListProvider) {
-        throw new Error('Tools list provider not configured');
+      try {
+        if (!this.toolsListProvider) {
+          throw new ConfigurationError('Tools list provider not configured', {
+            agentRole: this.persona.role,
+            protocol: 'MCP'
+          });
+        }
+        
+        return await this.toolsListProvider();
+      } catch (error) {
+        if (error instanceof AgentError) {
+          console.error('MCP tools list error:', error.toJSON());
+          throw error;
+        }
+        
+        const commError = new CommunicationError('Failed to retrieve tools list', {
+          agentRole: this.persona.role,
+          protocol: 'MCP',
+          cause: error instanceof Error ? error.message : String(error)
+        });
+        console.error('MCP communication error:', commError.toJSON());
+        throw commError;
       }
-      
-      return await this.toolsListProvider();
     });
 
     // Tool call handler
@@ -60,15 +79,40 @@ export class MCPServer {
       process.stderr.write(logMsg + '\n');
       process.stderr.write(argsMsg + '\n');
 
-      if (!args) {
-        throw new Error('No arguments provided');
-      }
+      try {
+        if (!name || typeof name !== 'string') {
+          throw new ValidationError('Tool name is required and must be a string', {
+            receivedName: name,
+            agentRole: this.persona.role,
+            protocol: 'MCP'
+          });
+        }
 
-      if (!this.toolCallHandler) {
-        throw new Error('Tool call handler not configured');
-      }
+        if (!this.toolCallHandler) {
+          throw new ConfigurationError('Tool call handler not configured', {
+            toolName: name,
+            agentRole: this.persona.role,
+            protocol: 'MCP'
+          });
+        }
 
-      return await this.toolCallHandler(name, args);
+        return await this.toolCallHandler(name, args);
+      } catch (error) {
+        if (error instanceof AgentError) {
+          console.error('MCP tool call error:', error.toJSON());
+          throw error;
+        }
+        
+        const commError = new CommunicationError(`MCP tool call failed: ${name}`, {
+          toolName: name,
+          args,
+          agentRole: this.persona.role,
+          protocol: 'MCP',
+          cause: error instanceof Error ? error.message : String(error)
+        });
+        console.error('MCP communication error:', commError.toJSON());
+        throw commError;
+      }
     });
   }
 
@@ -105,18 +149,49 @@ export class MCPServer {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({})
         });
+        
+        if (!response.ok) {
+          throw new CommunicationError('HTTP request failed for list-tools', {
+            httpStatus: response.status,
+            httpStatusText: response.statusText,
+            httpPort,
+            agentRole: this.persona.role,
+            operation: 'proxy-list-tools'
+          });
+        }
+        
         const tools = await response.json();
         return tools;
       } catch (error) {
-        console.error(`Failed to forward list-tools request: ${error}`);
-        throw error;
+        if (error instanceof AgentError) {
+          console.error('Proxy list-tools error:', error.toJSON());
+          throw error;
+        }
+        
+        const commError = new CommunicationError('Failed to forward list-tools request', {
+          httpPort,
+          agentRole: this.persona.role,
+          operation: 'proxy-list-tools',
+          cause: error instanceof Error ? error.message : String(error)
+        });
+        console.error('Proxy communication error:', commError.toJSON());
+        throw commError;
       }
     });
     
     // Forward tool calls
     proxyServer.setRequestHandler(CallToolRequestSchema, async (request) => {
       const { name, arguments: args } = request.params;
+      
       try {
+        if (!name || typeof name !== 'string') {
+          throw new ValidationError('Tool name is required and must be a string', {
+            receivedName: name,
+            agentRole: this.persona.role,
+            operation: 'proxy-tool-call'
+          });
+        }
+
         const response = await fetch(`http://localhost:${httpPort}/mcp/call-tool`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -124,15 +199,36 @@ export class MCPServer {
         });
         
         if (!response.ok) {
-          const error = await response.json();
-          throw new Error(error.error || 'Tool call failed');
+          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+          throw new CommunicationError('HTTP request failed for tool call', {
+            toolName: name,
+            httpStatus: response.status,
+            httpStatusText: response.statusText,
+            httpPort,
+            agentRole: this.persona.role,
+            operation: 'proxy-tool-call',
+            serverError: errorData.error
+          });
         }
         
         const result = await response.json();
         return result;
       } catch (error) {
-        console.error(`Failed to forward tool call ${name}: ${error}`);
-        throw error;
+        if (error instanceof AgentError) {
+          console.error('Proxy tool call error:', error.toJSON());
+          throw error;
+        }
+        
+        const commError = new CommunicationError(`Failed to forward tool call: ${name}`, {
+          toolName: name,
+          args,
+          httpPort,
+          agentRole: this.persona.role,
+          operation: 'proxy-tool-call',
+          cause: error instanceof Error ? error.message : String(error)
+        });
+        console.error('Proxy communication error:', commError.toJSON());
+        throw commError;
       }
     });
     

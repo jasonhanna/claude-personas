@@ -2,6 +2,7 @@ import { MemoryManager } from './memory-manager.js';
 import { AgentCore } from './agent-core.js';
 import { HTTPEndpoints } from './http-endpoints.js';
 import { MCPServer } from './mcp-server.js';
+import { AgentError, ValidationError, MemoryError } from './errors.js';
 
 export interface PersonaConfig {
   name: string;
@@ -72,6 +73,10 @@ export class BaseAgentServer {
   }
 
   private async readSharedKnowledge(key: string) {
+    if (!key || typeof key !== 'string') {
+      throw new ValidationError('Key must be a non-empty string', { key });
+    }
+
     try {
       const result = await this.memoryManager.readSharedKnowledge(key);
       return {
@@ -81,16 +86,24 @@ export class BaseAgentServer {
         }]
       };
     } catch (error) {
-      return {
-        content: [{
-          type: "text",
-          text: "Shared knowledge not available"
-        }]
-      };
+      const memoryError = new MemoryError('Failed to read shared knowledge', {
+        key,
+        agentRole: this.persona.role,
+        cause: error instanceof Error ? error.message : String(error)
+      });
+      console.error('Memory read error:', memoryError.toJSON());
+      throw memoryError;
     }
   }
 
   private async writeSharedKnowledge(key: string, value: string) {
+    if (!key || typeof key !== 'string') {
+      throw new ValidationError('Key must be a non-empty string', { key });
+    }
+    if (typeof value !== 'string') {
+      throw new ValidationError('Value must be a string', { value });
+    }
+
     try {
       await this.memoryManager.writeSharedKnowledge(key, value);
       return {
@@ -100,24 +113,39 @@ export class BaseAgentServer {
         }]
       };
     } catch (error) {
-      return {
-        content: [{
-          type: "text",
-          text: `Error updating knowledge: ${error instanceof Error ? error.message : String(error)}`
-        }]
-      };
+      const memoryError = new MemoryError('Failed to write shared knowledge', {
+        key,
+        value,
+        agentRole: this.persona.role,
+        cause: error instanceof Error ? error.message : String(error)
+      });
+      console.error('Memory write error:', memoryError.toJSON());
+      throw memoryError;
     }
   }
 
   private async updateMemory(entry: string) {
-    await this.memoryManager.updateMemory(entry);
-    
-    return {
-      content: [{
-        type: "text",
-        text: "Memory updated"
-      }]
-    };
+    if (!entry || typeof entry !== 'string') {
+      throw new ValidationError('Entry must be a non-empty string', { entry });
+    }
+
+    try {
+      await this.memoryManager.updateMemory(entry);
+      return {
+        content: [{
+          type: "text",
+          text: "Memory updated"
+        }]
+      };
+    } catch (error) {
+      const memoryError = new MemoryError('Failed to update memory', {
+        entry,
+        agentRole: this.persona.role,
+        cause: error instanceof Error ? error.message : String(error)
+      });
+      console.error('Memory update error:', memoryError.toJSON());
+      throw memoryError;
+    }
   }
 
   private getDefaultPort(role: string): number {
@@ -149,38 +177,58 @@ export class BaseAgentServer {
 
 
   private async handleToolCall(name: string, args: any) {
+    if (!name || typeof name !== 'string') {
+      throw new ValidationError('Tool name must be a non-empty string', { name });
+    }
     if (!args) {
-      throw new Error('No arguments provided');
+      throw new ValidationError('Tool arguments are required', { name });
     }
 
-    switch (name) {
-      case "get_agent_perspective":
-        return await this.getAgentPerspective(
-          args.task as string, 
-          args.context as string | undefined
-        );
-      
-      case "send_message":
-        return await this.sendMessage({
-          from: this.persona.role,
-          to: args.to as string,
-          type: args.type as 'query' | 'response' | 'notification',
-          content: args.content as string,
-          context: args.context,
-          timestamp: Date.now()
-        });
-      
-      case "read_shared_knowledge":
-        return await this.readSharedKnowledge(args.key as string);
-      
-      case "write_shared_knowledge":
-        return await this.writeSharedKnowledge(args.key as string, args.value as string);
-      
-      case "update_memory":
-        return await this.updateMemory(args.entry as string);
-      
-      default:
-        throw new Error(`Unknown tool: ${name}`);
+    try {
+      switch (name) {
+        case "get_agent_perspective":
+          if (!args.task) {
+            throw new ValidationError('Task is required for get_agent_perspective', { args });
+          }
+          return await this.getAgentPerspective(
+            args.task as string, 
+            args.context as string | undefined
+          );
+        
+        case "send_message":
+          if (!args.to || !args.type || !args.content) {
+            throw new ValidationError('to, type, and content are required for send_message', { args });
+          }
+          return await this.sendMessage({
+            from: this.persona.role,
+            to: args.to as string,
+            type: args.type as 'query' | 'response' | 'notification',
+            content: args.content as string,
+            context: args.context,
+            timestamp: Date.now()
+          });
+        
+        case "read_shared_knowledge":
+          return await this.readSharedKnowledge(args.key as string);
+        
+        case "write_shared_knowledge":
+          return await this.writeSharedKnowledge(args.key as string, args.value as string);
+        
+        case "update_memory":
+          return await this.updateMemory(args.entry as string);
+        
+        default:
+          throw new ValidationError(`Unknown tool: ${name}`, { name, availableTools: ['get_agent_perspective', 'send_message', 'read_shared_knowledge', 'write_shared_knowledge', 'update_memory'] });
+      }
+    } catch (error) {
+      if (error instanceof AgentError) {
+        throw error;
+      }
+      throw new AgentError(`Tool execution failed: ${name}`, {
+        code: 'TOOL_EXECUTION_ERROR',
+        context: { name, args },
+        cause: error instanceof Error ? error : new Error(String(error))
+      });
     }
   }
 
