@@ -33,7 +33,7 @@ export class HTTPEndpoints {
 
   private setupRoutes(): void {
     // Health check endpoint
-    this.app.get('/health', (_req, res) => {
+    this.app.get('/health', (_req: express.Request, res: express.Response) => {
       res.json({ 
         status: 'running', 
         agent: this.persona.name, 
@@ -43,7 +43,7 @@ export class HTTPEndpoints {
     });
     
     // MCP forwarding endpoints
-    this.app.post('/mcp/list-tools', async (_req, res) => {
+    this.app.post('/mcp/list-tools', async (_req: express.Request, res: express.Response) => {
       console.error(`[${new Date().toISOString()}] ${this.persona.name} received forwarded tools list request`);
       
       try {
@@ -70,7 +70,7 @@ export class HTTPEndpoints {
       }
     });
     
-    this.app.post('/mcp/call-tool', async (req, res) => {
+    this.app.post('/mcp/call-tool', async (req: express.Request, res: express.Response) => {
       const { name, args } = req.body;
       const logMsg = `[${new Date().toISOString()}] ${this.persona.name} received forwarded MCP request: ${name}`;
       const argsMsg = `Arguments: ${JSON.stringify(args)}`;
