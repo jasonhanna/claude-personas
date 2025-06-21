@@ -5,7 +5,8 @@
   "type": "module",
   "main": "dist/standalone-agent.js",
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && chmod +x dist/standalone-agent.js && npm run generate-config",
+    "generate-config": "node scripts/generate-claude-config.js",
     "setup-mcp": "tsx scripts/setup-mcp.ts",
     "agent": "node dist/standalone-agent.js",
     "test": "jest",
@@ -15,36 +16,62 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "^0.5.0",
     "@types/express": "^5.0.3",
+    "@types/glob": "^8.1.0",
+    "@types/sqlite3": "^3.1.11",
     "express": "^5.1.0",
+    "glob": "^11.0.3",
+    "sqlite3": "^5.1.7",
     "yaml": "^2.3.0",
     "zod": "^3.22.0"
   },
   "devDependencies": {
-    "@types/jest": "^29.5.0",
+    "@types/jest": "^29.5.14",
     "@types/node": "^20.0.0",
     "@types/supertest": "^2.0.12",
-    "jest": "^29.5.0",
+    "jest": "^29.7.0",
     "supertest": "^6.3.3",
-    "ts-jest": "^29.1.0",
+    "ts-jest": "^29.4.0",
     "tsx": "^4.0.0",
     "typescript": "^5.0.0"
   },
   "jest": {
     "preset": "ts-jest/presets/default-esm",
-    "extensionsToTreatAsEsm": [".ts"],
+    "extensionsToTreatAsEsm": [
+      ".ts"
+    ],
     "transform": {
-      "^.+\\.ts$": ["ts-jest", {
-        "useESM": true
-      }]
+      "^.+\\.ts$": [
+        "ts-jest",
+        {
+          "useESM": true
+        }
+      ]
     },
     "moduleNameMapper": {
-      "^(\\.{1,2}/.*)\\.js$": "$1"
+      "^(\\.{1,2}/.*)\\.js$": "$1",
+      "^@modelcontextprotocol/sdk/(.*)$": "<rootDir>/src/test-utils/mcp-mocks.js"
     },
     "testEnvironment": "node",
+    "roots": [
+      "<rootDir>/src",
+      "<rootDir>/tests"
+    ],
+    "testMatch": [
+      "**/__tests__/**/*.test.ts",
+      "**/tests/**/*.test.ts"
+    ],
+    "testPathIgnorePatterns": [
+      "/node_modules/",
+      "/dist/"
+    ],
+    "transformIgnorePatterns": [
+      "node_modules/(?!@modelcontextprotocol)"
+    ],
     "coverageDirectory": "coverage",
     "collectCoverageFrom": [
       "src/**/*.ts",
-      "!src/**/*.d.ts"
+      "!src/**/*.d.ts",
+      "!src/**/*.test.ts"
     ],
     "coverageThreshold": {
       "global": {

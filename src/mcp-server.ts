@@ -130,7 +130,18 @@ export class MCPServer {
     console.error(`${this.persona.name} MCP server connected`);
   }
 
-  async createStdioProxy(httpPort: number): Promise<void> {
+  async createStdioProxy(httpPort: number, authToken?: string): Promise<void> {
+    console.error(`[${new Date().toISOString()}] Creating stdio proxy for ${this.persona.name} to port ${httpPort}`);
+    console.error(`[${new Date().toISOString()}] Auth token received: ${authToken ? `${authToken.substring(0, 20)}...` : 'undefined'}`);
+    
+    if (!authToken) {
+      throw new ConfigurationError('Auth token is required for stdio proxy', {
+        agentRole: this.persona.role,
+        httpPort,
+        operation: 'createStdioProxy'
+      });
+    }
+    
     // Create a proxy server that forwards MCP requests to HTTP
     const proxyServer = new Server({
       name: `${this.persona.role}-proxy`,
@@ -144,13 +155,27 @@ export class MCPServer {
     // Forward list tools requests
     proxyServer.setRequestHandler(ListToolsRequestSchema, async () => {
       try {
+        console.error(`[${new Date().toISOString()}] POST /mcp/list-tools - Agent: ${this.persona.name}`);
+        
+        const headers: Record<string, string> = { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`
+        };
+        console.error(`[${new Date().toISOString()}] Using auth token: ${authToken.substring(0, 20)}...`);
+        
         const response = await fetch(`http://localhost:${httpPort}/mcp/list-tools`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers,
           body: JSON.stringify({})
         });
         
         if (!response.ok) {
+          console.error(`[${new Date().toISOString()}] HTTP error response:`, {
+            status: response.status,
+            statusText: response.statusText,
+            headers: Object.fromEntries(response.headers.entries())
+          });
+          
           throw new CommunicationError('HTTP request failed for list-tools', {
             httpStatus: response.status,
             httpStatusText: response.statusText,
@@ -192,13 +217,24 @@ export class MCPServer {
           });
         }
 
+        const headers: Record<string, string> = { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`
+        };
+        
         const response = await fetch(`http://localhost:${httpPort}/mcp/call-tool`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers,
           body: JSON.stringify({ name, args })
         });
         
         if (!response.ok) {
+          console.error(`[${new Date().toISOString()}] Tool call proxy error for ${name}:`, {
+            status: response.status,
+            statusText: response.statusText,
+            hasAuthToken: !!authToken
+          });
+          
           const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
           throw new CommunicationError('HTTP request failed for tool call', {
             toolName: name,

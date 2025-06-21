@@ -157,7 +157,12 @@ describe('Integration Tests - Error Propagation', () => {
   describe('BaseAgentServer Error Handling', () => {
     let server: BaseAgentServer;
     
-    beforeEach(() => {
+    beforeEach(async () => {
+      // Create test directories
+      const fs = await import('fs/promises');
+      await fs.mkdir('/tmp/test', { recursive: true });
+      await fs.mkdir('/tmp/test-project', { recursive: true });
+      
       server = new BaseAgentServer(
         mockPersona,
         '/tmp/test',
@@ -195,7 +200,7 @@ describe('Integration Tests - Error Propagation', () => {
         .rejects.toThrow(ValidationError);
       
       await expect(handleToolCall('unknown_tool', {}))
-        .rejects.toHaveProperty('message', expect.stringContaining('Unknown tool'));
+        .rejects.toHaveProperty('message', expect.stringContaining('not found'));
     });
 
     test('should handle get_agent_perspective validation', async () => {

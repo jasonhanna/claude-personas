@@ -1,7 +1,10 @@
 import { PersonaConfig } from './base-agent-server.js';
 import { ValidationError, ConfigurationError } from './errors.js';
-import { exec } from 'child_process';
+import { exec, spawn } from 'child_process';
 import { promisify } from 'util';
+import * as fs from 'fs/promises';
+import * as path from 'path';
+import { glob } from 'glob';
 
 const execAsync = promisify(exec);
 
@@ -24,11 +27,13 @@ export interface ToolCategory {
 
 export class ToolManager {
   private persona: PersonaConfig;
+  private projectDir?: string;
   private toolRegistry: Map<string, ToolDefinition> = new Map();
   private toolCategories: Map<string, ToolCategory> = new Map();
 
-  constructor(persona: PersonaConfig) {
+  constructor(persona: PersonaConfig, projectDir?: string) {
     this.persona = persona;
+    this.projectDir = projectDir;
     this.initializeRoleSpecificTools();
   }
 
@@ -293,12 +298,167 @@ export class ToolManager {
     }
   }
 
+  private registerClaudeCodeCoreTools(): void {
+
+    // Bash tool
+    const bashTool: ToolDefinition = {
+      name: 'Bash',
+      description: 'Execute bash commands in the project directory',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          command: { type: 'string', description: 'The command to execute' },
+          description: { type: 'string', description: 'Description of what this command does' },
+          timeout: { type: 'number', description: 'Optional timeout in milliseconds' }
+        },
+        required: ['command']
+      },
+      handler: async (args) => {
+        const { command, timeout = 120000 } = args;
+        const workingDir = this.projectDir || process.cwd();
+        
+        return new Promise((resolve, reject) => {
+          const child = spawn('bash', ['-c', command], {
+            cwd: workingDir,
+            stdio: ['pipe', 'pipe', 'pipe']
+          });
+
+          let stdout = '';
+          let stderr = '';
+
+          child.stdout.on('data', (data: Buffer) => {
+            stdout += data.toString();
+          });
+
+          child.stderr.on('data', (data: Buffer) => {
+            stderr += data.toString();
+          });
+
+          const timeoutId = setTimeout(() => {
+            child.kill();
+            reject(new Error(`Command timed out after ${timeout}ms`));
+          }, timeout);
+
+          child.on('close', (code: number | null) => {
+            clearTimeout(timeoutId);
+            if (code === 0) {
+              resolve({ output: stdout, error: stderr });
+            } else {
+              reject(new Error(`Command failed with code ${code}: ${stderr}`));
+            }
+          });
+        });
+      }
+    };
+
+    // Read tool
+    const readTool: ToolDefinition = {
+      name: 'Read',
+      description: 'Read a file from the filesystem',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          file_path: { type: 'string', description: 'The absolute path to the file to read' },
+          offset: { type: 'number', description: 'Line number to start reading from' },
+          limit: { type: 'number', description: 'Number of lines to read' }
+        },
+        required: ['file_path']
+      },
+      handler: async (args) => {
+        const { file_path, offset = 0, limit } = args;
+        const workingDir = this.projectDir || process.cwd();
+        
+        // Resolve relative paths relative to project directory
+        const resolvedPath = path.isAbsolute(file_path) ? file_path : path.join(workingDir, file_path);
+        
+        try {
+          const content = await fs.readFile(resolvedPath, 'utf-8');
+          const lines = content.split('\n');
+          
+          const startLine = Math.max(0, offset);
+          const endLine = limit ? Math.min(lines.length, startLine + limit) : lines.length;
+          
+          const selectedLines = lines.slice(startLine, endLine);
+          
+          // Format with line numbers like cat -n
+          const formattedLines = selectedLines.map((line: string, index: number) => 
+            `${(startLine + index + 1).toString().padStart(6)}→${line}`
+          );
+          
+          return formattedLines.join('\n');
+        } catch (error: any) {
+          throw new Error(`Failed to read file ${resolvedPath}: ${error.message}`);
+        }
+      }
+    };
+
+    // Glob tool
+    const globTool: ToolDefinition = {
+      name: 'Glob',
+      description: 'Find files matching a pattern',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          pattern: { type: 'string', description: 'The glob pattern to match files against' },
+          path: { type: 'string', description: 'The directory to search in' }
+        },
+        required: ['pattern']
+      },
+      handler: async (args) => {
+        const { pattern, path: searchPath } = args;
+        const workingDir = searchPath || this.projectDir || process.cwd();
+        
+        try {
+          const files = await glob(pattern, { cwd: workingDir });
+          return files.map((file: string) => path.join(workingDir, file));
+        } catch (error: any) {
+          throw new Error(`Glob pattern failed: ${error.message}`);
+        }
+      }
+    };
+
+    // Grep tool
+    const grepTool: ToolDefinition = {
+      name: 'Grep',
+      description: 'Search for patterns in files',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          pattern: { type: 'string', description: 'The pattern to search for' },
+          path: { type: 'string', description: 'Directory to search in' },
+          include: { type: 'string', description: 'File pattern to include' }
+        },
+        required: ['pattern']
+      },
+      handler: async (args) => {
+        const { pattern, path: searchPath, include } = args;
+        const workingDir = searchPath || this.projectDir || process.cwd();
+        
+        let command = `grep -r "${pattern}" "${workingDir}"`;
+        if (include) {
+          command += ` --include="${include}"`;
+        }
+        
+        return execAsync(command);
+      }
+    };
+
+    // Register all core tools
+    this.toolRegistry.set('Bash', bashTool);
+    this.toolRegistry.set('Read', readTool);
+    this.toolRegistry.set('Glob', globTool);
+    this.toolRegistry.set('Grep', grepTool);
+  }
+
   private registerCommonTools(): void {
     const commonCategory: ToolCategory = {
       name: 'Communication',
       description: 'Inter-agent communication and shared knowledge management',
       tools: []
     };
+
+    // First add Claude Code core tools
+    this.registerClaudeCodeCoreTools();
 
     // Agent perspective tool
     const perspectiveTool: ToolDefinition = {
@@ -312,7 +472,7 @@ export class ToolManager {
         },
         required: ['task']
       },
-      handler: async (args) => {
+      handler: async (_args) => {
         // This is handled by BaseAgentServer directly
         throw new ConfigurationError('Common tools should be handled by BaseAgentServer', {
           toolName: 'get_agent_perspective',
@@ -335,7 +495,7 @@ export class ToolManager {
         },
         required: ['to', 'type', 'content']
       },
-      handler: async (args) => {
+      handler: async (_args) => {
         throw new ConfigurationError('Common tools should be handled by BaseAgentServer', {
           toolName: 'send_message',
           agentRole: this.persona.role
@@ -354,7 +514,7 @@ export class ToolManager {
         },
         required: ['key']
       },
-      handler: async (args) => {
+      handler: async (_args) => {
         throw new ConfigurationError('Common tools should be handled by BaseAgentServer', {
           toolName: 'read_shared_knowledge',
           agentRole: this.persona.role
@@ -373,7 +533,7 @@ export class ToolManager {
         },
         required: ['key', 'value']
       },
-      handler: async (args) => {
+      handler: async (_args) => {
         throw new ConfigurationError('Common tools should be handled by BaseAgentServer', {
           toolName: 'write_shared_knowledge',
           agentRole: this.persona.role
@@ -391,7 +551,7 @@ export class ToolManager {
         },
         required: ['entry']
       },
-      handler: async (args) => {
+      handler: async (_args) => {
         throw new ConfigurationError('Common tools should be handled by BaseAgentServer', {
           toolName: 'update_memory',
           agentRole: this.persona.role
@@ -442,8 +602,12 @@ export class ToolManager {
           // If GitHub PR number is provided, fetch the actual diff
           if (args.prNumber) {
             try {
-              const { stdout: prDiff } = await execAsync(`gh pr diff ${args.prNumber}`);
-              const { stdout: prInfo } = await execAsync(`gh pr view ${args.prNumber} --json title,body,commits`);
+              const { stdout: prDiff } = await execAsync(`gh pr diff ${args.prNumber}`, { 
+                cwd: this.projectDir || process.cwd() 
+              });
+              const { stdout: prInfo } = await execAsync(`gh pr view ${args.prNumber} --json title,body,commits`, { 
+                cwd: this.projectDir || process.cwd() 
+              });
               
               analysis += `### PR Information\n${prInfo}\n\n`;
               analysis += `### Diff Analysis\n`;
@@ -879,7 +1043,9 @@ export class ToolManager {
           // If target looks like a file path, try to read it
           if (args.target.includes('/') || args.target.includes('.')) {
             try {
-              const { stdout: fileContent } = await execAsync(`cat "${args.target}"`);
+              const { stdout: fileContent } = await execAsync(`cat "${args.target}"`, { 
+                cwd: this.projectDir || process.cwd() 
+              });
               codeToTest = fileContent;
               testOutput += `**Target File:** ${args.target}\n\n`;
             } catch (error) {

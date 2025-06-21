@@ -132,6 +132,9 @@ async function startStandaloneAgent() {
     const originalConsoleError = console.error;
     const originalConsoleLog = console.log;
     
+    // Detect if we're being launched as an MCP server via STDIO
+    const isStdioMCP = process.stdin.isTTY === false && process.stdout.isTTY === false;
+    
     // Override both console.error and console.log to catch all output
     const consoleOverride = (...args: any[]) => {
       const message = args.map(arg => 
@@ -148,7 +151,12 @@ async function startStandaloneAgent() {
         }
       }
       
-      // Console output based on options
+      // CRITICAL: Never write to console in STDIO MCP mode - it breaks JSON-RPC protocol
+      if (isStdioMCP) {
+        return; // No console output whatsoever in STDIO mode
+      }
+      
+      // Console output based on options (only for non-STDIO mode)
       if (logToConsole && !quiet) {
         // Show ALL messages when --log-console is enabled
         originalConsoleError(...args);
@@ -164,20 +172,60 @@ async function startStandaloneAgent() {
     console.error = consoleOverride;
     console.log = consoleOverride;
     
-    try {
-      await agent.start();
+    if (isStdioMCP) {
+      // Claude Code is expecting pure STDIO MCP - output success message immediately
       await logMessage(`${persona.name} (${agentRole}) is now running as MCP server`);
-    } catch (error: any) {
-      if (error.message.includes('already in use')) {
-        await logMessage(`INFO: ${agentRole} agent is already running on its assigned port`, 'info');
-        await logMessage('Starting stdio-only MCP proxy to existing instance', 'info');
+      
+      // Check if HTTP server is already running on this port
+      const port = agent.getPort();
+      let serverAlreadyRunning = false;
+      
+      try {
+        // Generate token for health check
+        const token = await agent.getAuthService().authenticateAgent(persona);
+        const response = await fetch(`http://localhost:${port}/health`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          },
+          signal: AbortSignal.timeout(2000)
+        });
         
-        // Start stdio-only MCP server (no HTTP server due to port conflict)
-        await agent.startStdioOnly();
-        await logMessage(`${persona.name} (${agentRole}) stdio proxy is now running`, 'info');
-      } else {
-        throw error;
+        if (response.ok) {
+          serverAlreadyRunning = true;
+          await logMessage(`HTTP server already running on port ${port} - using existing instance`);
+        }
+      } catch (error) {
+        await logMessage(`No existing HTTP server found on port ${port} - will start embedded server`);
       }
+      
+      if (serverAlreadyRunning) {
+        // Use existing HTTP server
+        await agent.startStdioOnly();
+      } else {
+        // Start embedded HTTP server for this STDIO instance
+        await agent.start();
+      }
+    } else if (!process.env.SKIP_STDIO_CHECK) {
+      // Normal startup with full HTTP server (not launched by Claude Code)
+      try {
+        await agent.start();
+        await logMessage(`${persona.name} (${agentRole}) is now running as MCP server`);
+      } catch (error: any) {
+        if (error.message.includes('already in use')) {
+          await logMessage(`INFO: ${agentRole} agent is already running on its assigned port`, 'info');
+          await logMessage('Starting stdio-only MCP proxy to existing instance', 'info');
+          await agent.startStdioOnly();
+          await logMessage(`${persona.name} (${agentRole}) stdio proxy is now running`, 'info');
+        } else {
+          throw error;
+        }
+      }
+    } else {
+      // Background HTTP server mode (launched by the STDIO process)
+      await logMessage('Starting background HTTP server');
+      await agent.start();
+      await logMessage(`${persona.name} (${agentRole}) HTTP server is running in background`);
     }
     
     // Handle graceful shutdown
