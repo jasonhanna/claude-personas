@@ -161,6 +161,8 @@ interface ProjectAgentInfo {
 
 ### Phase 1: Core Infrastructure Refactoring (Week 1-2)
 
+**Engineering Manager Recommendation**: Start with Management Service + single project agent to validate approach, defer global agents until Phase 2 to reduce initial complexity.
+
 #### 1.1 Persona Management Service
 - [ ] New `persona-management-service.ts` running on port 3000
 - [ ] RESTful API for persona CRUD operations
@@ -168,27 +170,47 @@ interface ProjectAgentInfo {
 - [ ] Dynamic persona loading from `~/.claude-agents/personas/`
 - [ ] First-run initialization to copy templates from repo to user directory
 - [ ] Remove hardcoded role validation, support any persona file name
+- [ ] **NEW**: Comprehensive error handling and logging from day 1
+- [ ] **NEW**: TTL-based cleanup system for orphaned processes
 
 #### 1.2 Create Project Agent Launcher
 - [ ] New `project-agent.ts` that launches agents in project context
-- [ ] Dynamic port allocation system (extend beyond 3001-3003 for custom personas)
+- [ ] **ENHANCED**: Robust port allocation with conflict detection and retry logic
 - [ ] Project agent registry in `~/.claude-agents/registry/projects.json`
 - [ ] Session management for multiple Claude Code instances per project
 - [ ] Project hash generation from working directory
 - [ ] STDIO proxy creation for subsequent Claude Code instances
-- [ ] Heartbeat system for session tracking
+- [ ] **ENHANCED**: Heartbeat system with TTL-based cleanup (5 min default)
+- [ ] **NEW**: Process monitoring via PID validation
+- [ ] **NEW**: Graceful degradation when management service unreachable
 - [ ] Automatic cleanup when all sessions end
 
-#### 1.3 Refactor Tool Distribution
+#### 1.3 Minimal PoC Implementation
+- [ ] **NEW**: Build minimal management service + single project agent first
+- [ ] **NEW**: Validate port allocation and session management under load
+- [ ] **NEW**: Standardized error handling across all services
+   ```typescript
+   class AgentSystemError extends Error {
+     constructor(
+       message: string,
+       public code: string,
+       public service: string,
+       public recoverable: boolean = false
+     ) { super(message); }
+   }
+   ```
+
+#### 1.4 Refactor Tool Distribution (Deferred to Phase 2)
 - [ ] Create `GlobalToolSet` and `ProjectToolSet` interfaces
 - [ ] Move file/bash operations to project agents
 - [ ] Keep persona/memory tools in global agents
 - [ ] Update tool registration logic
 
-#### 1.4 Update Communication Layer
+#### 1.5 Update Communication Layer
 - [ ] Project agents proxy persona requests to global agents
-- [ ] Implement project-to-global authentication
+- [ ] **NEW**: Authentication following existing codebase patterns (JWT-based)
 - [ ] Add project context to all global agent requests
+- [ ] **NEW**: Circuit breakers for inter-service communication
 
 ### Phase 2: Context Management Enhancement (Week 3-4)
 
@@ -233,6 +255,9 @@ interface ProjectAgentInfo {
 #### 2.3 Memory Synchronization
 - [ ] Project agents push learnings to global memory
 - [ ] Global agents synthesize cross-project patterns
+- [ ] **ENHANCED**: Implement optimistic locking for memory updates
+- [ ] **NEW**: Add conflict resolution strategy for concurrent modifications
+- [ ] **NEW**: Consider event sourcing for agent memory changes
 - [ ] Implement memory versioning and conflict resolution
 
 ### Phase 3: Advanced Features (Week 5-6)
@@ -541,6 +566,29 @@ PROJECT_AGENTS_PORT_RANGE=30000-40000
 PROJECT_AGENTS_TIMEOUT=3600  # seconds
 ```
 
+### Centralized Configuration
+```json
+// ~/.claude-agents/config.json
+{
+  "system": {
+    "managementPort": 3000,
+    "projectPortRange": [30000, 40000],
+    "heartbeatInterval": 30000,
+    "cleanupTtl": 300000
+  },
+  "security": {
+    "enableAuth": true,
+    "tokenExpiry": 3600,
+    "authMethod": "jwt"  // Following existing codebase patterns
+  },
+  "monitoring": {
+    "enableLogging": true,
+    "logLevel": "info",
+    "enableMetrics": true
+  }
+}
+```
+
 ### Updated claude-code-config.json
 ```json
 {
@@ -568,13 +616,72 @@ PROJECT_AGENTS_TIMEOUT=3600  # seconds
 ## Risk Mitigation
 
 ### Technical Risks
-1. **Port Exhaustion**: Implement port recycling and cleanup
-2. **Memory Leaks**: Add automatic project agent termination
-3. **Network Failures**: Implement retry logic and circuit breakers
+1. **Port Exhaustion**: Implement robust port conflict detection and recovery
+   ```typescript
+   async allocatePort(): Promise<number> {
+     for (let attempts = 0; attempts < 10; attempts++) {
+       const port = this.getRandomPort();
+       if (await this.isPortAvailable(port)) {
+         return port;
+       }
+     }
+     throw new PortExhaustionError();
+   }
+   ```
+
+2. **Memory Leaks**: Add automatic project agent termination with TTL-based cleanup
+   - Default 5 minutes without heartbeat triggers cleanup
+   - Process monitoring via PID validation
+   - Graceful degradation when management service unreachable
+
+3. **Network Failures**: Implement retry logic and circuit breakers for inter-service communication
+
+4. **Data Consistency**: Race conditions in concurrent memory updates
+   - Implement optimistic locking for memory updates
+   - Add conflict resolution strategy for concurrent modifications
+   - Consider event sourcing for agent memory changes
+
+5. **Complexity Management**: Dozens of services vs. current 3 singletons
+   - Comprehensive logging/monitoring from day 1
+   - Circuit breakers for inter-service communication
+   - "Simple mode" fallback for development
 
 ### Operational Risks
 1. **User Confusion**: Clear documentation and migration guides
 2. **Performance Degradation**: Monitoring and alerting system
+3. **Service Orchestration**: Robust error handling and observability across distributed services
+
+## Engineering Manager Feedback Integration
+
+### ✅ **Approved Recommendations Incorporated**
+
+1. **Phase 1 Simplification**: Start with Management Service + single project agent, defer global agents
+2. **Robust Port Management**: Added conflict detection and retry logic
+3. **Enhanced Session Management**: TTL-based cleanup, PID validation, graceful degradation
+4. **Data Consistency**: Optimistic locking and conflict resolution for memory updates
+5. **Comprehensive Error Handling**: Standardized error classes and logging from day 1
+6. **Authentication**: Follow existing JWT-based patterns from current codebase
+
+### 📊 **Outstanding Items for Future Consideration**
+
+The following specifications should be defined during implementation phases:
+
+1. **Performance Requirements**: Startup latency targets, memory usage limits
+2. **Security Model**: Complete authentication flows, input validation, rate limiting
+3. **Monitoring/Observability**: Distributed tracing, metrics collection, debugging tools
+4. **Resource Limits**: Maximum concurrent projects, agents per project, cleanup policies
+
+### 🧪 **Essential Test Scenarios** (Engineering Manager Requirements)
+```bash
+# Critical test cases identified:
+- Multiple Claude Code instances in same project
+- Rapid start/stop of project sessions  
+- Management service failure/recovery
+- Port exhaustion scenarios
+- Persona corruption/recovery
+- Memory update race conditions
+- Inter-service communication failures
+```
 
 ## Open Questions for Discussion
 
@@ -600,16 +707,19 @@ PROJECT_AGENTS_TIMEOUT=3600  # seconds
 
 5. **Multiple Configurations**: Power users could maintain different agent configurations by switching `CLAUDE_AGENTS_HOME`
 
-## Next Steps
+## Next Steps (Updated Based on Engineering Manager Review)
 
-1. Review and refine this plan based on feedback
-2. Create detailed technical specifications for each component
-3. Set up development environment for testing
-4. Begin Phase 1 implementation with project agent launcher
-5. Establish testing protocols for multi-project scenarios
+1. ✅ **Complete**: Engineering Manager review and feedback incorporation
+2. **Create PoC**: Build minimal management service + single project agent
+3. **Load Testing**: Validate port allocation and session management under load
+4. **Security Review**: Define authentication model following existing JWT patterns
+5. **Documentation**: Create troubleshooting guide for distributed setup
+6. **Begin Phase 1**: Start with simplified approach (Management Service first)
+7. **Establish Testing**: Implement essential test scenarios identified in review
 
 ---
 
-**Document Status**: DRAFT - Awaiting Review and Feedback
+**Document Status**: REVIEWED - Engineering Manager Approved with Recommendations
 **Last Updated**: 2025-06-21
 **Author**: Multi-Agent Development Team
+**Reviewer**: Alex Chen (Engineering Manager)
