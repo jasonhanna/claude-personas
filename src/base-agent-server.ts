@@ -1,9 +1,19 @@
 import { MemoryManager } from './memory-manager.js';
 import { AgentCore } from './agent-core.js';
-import { HTTPEndpoints } from './http-endpoints.js';
+import { AuthenticatedHTTPEndpoints } from './http-endpoints-auth.js';
 import { MCPServer } from './mcp-server.js';
 import { ToolManager } from './tool-manager.js';
-import { AgentError, ValidationError, MemoryError } from './errors.js';
+import { MessageBroker } from './messaging/message-broker.js';
+import { ConnectionManager } from './messaging/connection-manager.js';
+import { HttpTransport } from './transport/http-transport.js';
+import { AuthService, createDevelopmentAuthService } from './auth/auth-service.js';
+import { AgentError, ValidationError, MemoryError, CommunicationError } from './errors.js';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { createServer } from 'net';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 export interface PersonaConfig {
   name: string;
@@ -31,20 +41,65 @@ export class BaseAgentServer {
   private port: number;
   private memoryManager: MemoryManager;
   private agentCore: AgentCore;
-  private httpEndpoints: HTTPEndpoints;
+  private httpEndpoints: AuthenticatedHTTPEndpoints;
   private mcpServer: MCPServer;
   private toolManager: ToolManager;
+  private authService: AuthService;
+  private messageBroker: MessageBroker;
+  private connectionManager: ConnectionManager;
+  private httpTransport: HttpTransport;
 
-  constructor(persona: PersonaConfig, workingDir: string, _projectDir?: string, port?: number) {
+  constructor(persona: PersonaConfig, workingDir: string, projectDir?: string, port?: number) {
     this.persona = persona;
     this.port = port || this.getDefaultPort(persona.role);
     
-    // Initialize focused components
+    // Initialize core components
     this.memoryManager = new MemoryManager(persona, workingDir);
     this.agentCore = new AgentCore(persona, this.memoryManager);
-    this.httpEndpoints = new HTTPEndpoints(persona, this.port);
+    this.toolManager = new ToolManager(persona, projectDir);
+    
+    // Initialize authentication system
+    // Framework directory is two levels up from workingDir (workingDir is workspace/agents/role)
+    const frameworkDir = path.resolve(workingDir, '../..');
+    this.authService = createDevelopmentAuthService(frameworkDir);
+    
+    // Initialize messaging system
+    const runtimeDir = path.resolve(__dirname, '../runtime');
+    this.messageBroker = new MessageBroker({
+      dbPath: path.join(runtimeDir, `${persona.role}-messages.db`),
+      defaultTimeout: 30000,
+      defaultRetries: 3,
+      cleanupInterval: 60000,
+      messageRetention: 7 * 24 * 60 * 60 * 1000 // 7 days
+    });
+    
+    this.connectionManager = new ConnectionManager({
+      discoveryInterval: 60000, // Check every minute instead of 30 seconds
+      healthCheckInterval: 60000, // Health check every minute instead of 15 seconds
+      healthCheckTimeout: 5000,
+      maxRetries: 3,
+      retryBackoff: 1000
+    });
+    
+    // Initialize transport with reduced polling
+    this.httpTransport = new HttpTransport({
+      port: this.port,
+      pollInterval: 30000, // Poll every 30 seconds instead of 1 second
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Agent-Id': persona.role
+      }
+    });
+    
+    // Initialize authenticated HTTP endpoints
+    this.httpEndpoints = new AuthenticatedHTTPEndpoints(
+      persona, 
+      this.port, 
+      this.authService
+    );
+    
+    // Initialize MCP server
     this.mcpServer = new MCPServer(persona);
-    this.toolManager = new ToolManager(persona);
 
     this.setupToolHandlers();
     this.initializeMemory();
@@ -70,7 +125,55 @@ export class BaseAgentServer {
 
 
   private async sendMessage(message: AgentMessage) {
-    return await this.agentCore.sendMessage(message);
+    try {
+      // Handle true self-messaging locally (same from and to)
+      // But allow task delegation to same role type from different sources
+      if (message.to === this.persona.role && message.from === this.persona.role) {
+        console.error(`[${new Date().toISOString()}] Self-message detected for ${this.persona.role}, handling locally`);
+        
+        // Process the message as if it was received
+        // For now, just acknowledge it - in future could process through local handlers
+        return {
+          content: [{
+            type: "text",
+            text: `Message processed locally (self-message)`
+          }]
+        };
+      }
+      
+      // Use the new messaging system instead of AgentCore
+      await this.messageBroker.sendMessage(
+        message.to,
+        'notification',
+        {
+          type: message.type,
+          content: message.content,
+          context: message.context,
+          timestamp: message.timestamp
+        },
+        {
+          priority: message.type === 'query' ? 'high' : 'normal',
+          metadata: {
+            from: message.from,
+            originalType: message.type
+          }
+        }
+      );
+      
+      return {
+        content: [{
+          type: "text",
+          text: `Message sent to ${message.to}`
+        }]
+      };
+    } catch (error) {
+      const commError = new CommunicationError('Failed to send message', {
+        message,
+        cause: error instanceof Error ? error.message : String(error)
+      });
+      console.error('Message send error:', commError.toJSON());
+      throw commError;
+    }
   }
 
   private async readSharedKnowledge(key: string) {
@@ -159,21 +262,100 @@ export class BaseAgentServer {
     return portMap[role] || 3000 + Math.floor(Math.random() * 1000);
   }
 
+  private async isPortInUse(port: number): Promise<boolean> {
+    return new Promise((resolve) => {
+      const server = createServer();
+      server.listen(port, () => {
+        server.once('close', () => resolve(false));
+        server.close();
+      });
+      server.on('error', () => resolve(true));
+    });
+  }
+
   async start() {
     try {
-      // Start HTTP server first
-      await this.httpEndpoints.start();
+      console.error(`[${new Date().toISOString()}] Starting ${this.persona.name} agent...`);
       
-      // Then connect MCP server
+      // Check if port is already in use
+      const portInUse = await this.isPortInUse(this.port);
+      if (portInUse) {
+        console.error(`[${new Date().toISOString()}] INFO: ${this.persona.role} agent is already running on its assigned port`);
+        await this.startStdioOnly();
+        return;
+      }
+      
+      // Initialize authentication system
+      await this.authService.initialize();
+      console.error(`[${new Date().toISOString()}] Authentication system initialized`);
+      
+      // Generate token for this agent
+      const token = await this.authService.authenticateAgent(this.persona);
+      console.error(`[${new Date().toISOString()}] Agent token generated: ${token.substring(0, 20)}...`);
+      
+      // Start messaging system
+      await this.messageBroker.start();
+      await this.connectionManager.start();
+      console.error(`[${new Date().toISOString()}] Messaging system started`);
+      
+      // Register HTTP transport with message broker
+      this.messageBroker.registerTransport('http', this.httpTransport);
+      this.connectionManager.registerTransport('http', this.httpTransport);
+      console.error(`[${new Date().toISOString()}] HTTP transport registered`);
+      
+      // Start HTTP server with authentication
+      await this.httpEndpoints.start();
+      console.error(`[${new Date().toISOString()}] Authenticated HTTP server started on port ${this.port}`);
+      
+      // Set auth token on HTTP transport
+      this.httpTransport.setAuthToken(token);
+      
+      // Connect HTTP transport
+      await this.httpTransport.connect();
+      console.error(`[${new Date().toISOString()}] HTTP transport connected`);
+      
+      // Register this agent with connection manager
+      this.connectionManager.registerAgent({
+        id: this.persona.role,
+        role: this.persona.role,
+        address: 'localhost',
+        port: this.port,
+        transport: 'http',
+        status: 'healthy',
+        lastSeen: Date.now(),
+        metadata: {
+          name: this.persona.name,
+          tools: this.persona.tools
+        }
+      });
+      console.error(`[${new Date().toISOString()}] Agent registered with connection manager`);
+      
+      // Connect MCP server (for STDIO interface)
       await this.mcpServer.connect();
+      console.error(`[${new Date().toISOString()}] MCP server connected for STDIO`);
+      
+      console.error(`[${new Date().toISOString()}] ${this.persona.name} agent fully started and ready`);
     } catch (error) {
+      console.error(`[${new Date().toISOString()}] Server startup error:`, error);
+      console.error(`[${new Date().toISOString()}] Failed to start ${this.persona.name} agent:`, error);
       throw error;
     }
   }
 
   async startStdioOnly() {
+    console.error(`[${new Date().toISOString()}] Starting stdio-only MCP proxy to existing instance`);
     console.error(`Starting stdio proxy forwarding to http://localhost:${this.port}`);
-    await this.mcpServer.createStdioProxy(this.port);
+    
+    // Initialize authentication system if not already done
+    await this.authService.initialize();
+    
+    // Generate token for proxy authentication
+    const token = await this.authService.authenticateAgent(this.persona);
+    console.error(`[${new Date().toISOString()}] Generated auth token for ${this.persona.name}: ${token.substring(0, 20)}...`);
+    console.error(`[${new Date().toISOString()}] ${this.persona.name} stdio proxy connected, forwarding to port ${this.port}`);
+    
+    await this.mcpServer.createStdioProxy(this.port, token);
+    console.error(`[${new Date().toISOString()}] ${this.persona.name} (${this.persona.role}) stdio proxy is now running`);
   }
 
 
@@ -353,8 +535,26 @@ export class BaseAgentServer {
   }
 
   async stop() {
-    await this.httpEndpoints.stop();
-    console.error(`${this.persona.name} agent stopped`);
+    try {
+      console.error(`[${new Date().toISOString()}] Stopping ${this.persona.name} agent...`);
+      
+      // Stop HTTP transport
+      await this.httpTransport.disconnect();
+      console.error(`[${new Date().toISOString()}] HTTP transport disconnected`);
+      
+      // Stop messaging system
+      await this.connectionManager.stop();
+      await this.messageBroker.stop();
+      console.error(`[${new Date().toISOString()}] Messaging system stopped`);
+      
+      // Stop HTTP server
+      await this.httpEndpoints.stop();
+      console.error(`[${new Date().toISOString()}] HTTP server stopped`);
+      
+      console.error(`[${new Date().toISOString()}] ${this.persona.name} agent stopped`);
+    } catch (error) {
+      console.error(`[${new Date().toISOString()}] Error stopping ${this.persona.name} agent:`, error);
+    }
   }
 
   // Getter methods for external access
@@ -372,6 +572,22 @@ export class BaseAgentServer {
 
   getAgentCore(): AgentCore {
     return this.agentCore;
+  }
+
+  getAuthService(): AuthService {
+    return this.authService;
+  }
+
+  getMessageBroker(): MessageBroker {
+    return this.messageBroker;
+  }
+
+  getConnectionManager(): ConnectionManager {
+    return this.connectionManager;
+  }
+
+  getHttpTransport(): HttpTransport {
+    return this.httpTransport;
   }
 }
 

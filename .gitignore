@@ -11,6 +11,8 @@ dist/
 logs/
 agents/
 shared_knowledge.json
+runtime/
+.jwt-secret
 
 # Environment files
 .env

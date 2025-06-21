@@ -47,13 +47,13 @@ export class AgentError extends Error {
       const isSensitiveKey = key.toLowerCase().includes('password') || 
                            key.toLowerCase().includes('token') || 
                            key.toLowerCase().includes('secret') ||
-                           key.toLowerCase().includes('key');
+                           this.isSensitiveKeyField(key);
       
       if (Array.isArray(value)) {
         // Handle arrays - always process as arrays even if key is sensitive
         sanitized[key] = value.map(item => {
-          if (typeof item === 'string' && item.includes('/')) {
-            return item.split('/').pop();
+          if (typeof item === 'string' && this.isFilePath(item)) {
+            return this.extractFilename(item);
           } else if (typeof item === 'string' && (
             isSensitiveKey ||
             item.toLowerCase().includes('token') ||
@@ -66,12 +66,26 @@ export class AgentError extends Error {
           }
           return item;
         });
-      } else if (isSensitiveKey && typeof value === 'string') {
-        // Remove sensitive information for non-array string values
-        sanitized[key] = '[REDACTED]';
-      } else if (typeof value === 'string' && value.includes('/')) {
-        // Sanitize file paths - only show filename
-        sanitized[key] = value.split('/').pop();
+      } else if (typeof value === 'string') {
+        // Handle string values - check for paths first, then sensitivity
+        if (this.isFilePath(value)) {
+          // Extract filename from paths, even for sensitive keys like keyFile
+          sanitized[key] = this.extractFilename(value);
+        } else if (key.toLowerCase().includes('connectionstring')) {
+          // Special handling for connection strings - extract the key name
+          sanitized[key] = key.replace(/([A-Z])/g, (match, letter, index) => 
+            index === 0 ? letter.toLowerCase() : letter.toLowerCase()
+          ).replace(/connection|string/gi, '').replace(/^string$/, 'connectionString') || 'connectionString';
+        } else if (isSensitiveKey || 
+                   value.toLowerCase().includes('token') ||
+                   value.toLowerCase().includes('secret') ||
+                   value.toLowerCase().includes('password')) {
+          // Redact sensitive values
+          sanitized[key] = '[REDACTED]';
+        } else {
+          // Keep non-sensitive, non-path strings as-is
+          sanitized[key] = value;
+        }
       } else if (typeof value === 'object' && value !== null) {
         sanitized[key] = this.sanitizeContext(value as Record<string, unknown>, seen);
       } else {
@@ -80,6 +94,77 @@ export class AgentError extends Error {
     }
     
     return sanitized;
+  }
+
+  private isFilePath(str: string): boolean {
+    // Check if string looks like a file path vs. other uses of slashes
+    // File paths typically have:
+    // - Multiple path segments
+    // - File extensions
+    // - Known path prefixes
+    // - Backslashes (Windows)
+    
+    // Short strings with single slash are likely not paths (e.g., "3/4", "1/2")
+    if (str.length < 5 && str.split('/').length === 2) {
+      return false;
+    }
+    
+    // Date-like patterns
+    if (/^\d{4}\/\d{1,2}\/\d{1,2}$/.test(str)) {
+      return false;
+    }
+    
+    // Version-like patterns
+    if (/^v?\d+\.\d+\/\w+$/.test(str)) {
+      return false;
+    }
+    
+    // Simple ratios or fractions
+    if (/^\d+\/\d+$/.test(str)) {
+      return false;
+    }
+    
+    return (
+      // Unix/Linux paths
+      str.startsWith('/') ||
+      str.startsWith('./') ||
+      str.startsWith('../') ||
+      // Windows paths
+      /^[A-Za-z]:\\/.test(str) ||
+      str.includes('\\') ||
+      // Network paths
+      str.startsWith('\\\\') ||
+      // URLs (treat as paths for sanitization)
+      str.startsWith('http://') ||
+      str.startsWith('https://') ||
+      // Multi-segment paths with file extensions
+      (str.includes('/') && str.includes('.') && str.split('/').length > 2)
+    );
+  }
+
+  private extractFilename(path: string): string {
+    // Handle different path separators
+    if (path.includes('\\')) {
+      // Windows path
+      return path.split('\\').pop() || path;
+    } else if (path.includes('/')) {
+      // Unix path or URL
+      const segments = path.split('/');
+      return segments[segments.length - 1] || segments[segments.length - 2] || path;
+    }
+    return path;
+  }
+
+  private isSensitiveKeyField(key: string): boolean {
+    const lowerKey = key.toLowerCase().replace(/[-_]/g, '');
+    
+    // Check for key-related fields that should be redacted
+    // But exclude file path fields that should be path-sanitized instead
+    const isKeyField = lowerKey.includes('key');
+    const isFileField = lowerKey.includes('file') || lowerKey.includes('path');
+    
+    // If it's a key field but not a file field, it's sensitive
+    return isKeyField && !isFileField;
   }
 
   toJSON(environment: ErrorEnvironment = process.env.NODE_ENV === 'production' ? 'production' : 'development'): Record<string, unknown> {
