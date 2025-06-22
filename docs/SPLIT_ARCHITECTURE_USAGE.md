@@ -33,10 +33,10 @@ claude --mcp-server qa-manager "create test cases"
 node scripts/test-split-architecture.js
 ```
 
-### 4. Revert to Standalone Mode
+### 4. Disable Split Architecture (Optional)
 
 ```bash
-# Switch back to standalone agents
+# Disable split architecture (reverts to basic config)
 node scripts/disable-split-architecture.js
 ```
 
@@ -56,9 +56,10 @@ node scripts/disable-split-architecture.js
 
 ### Key Benefits
 1. **Correct Working Directory**: Agents operate in your project, not the framework directory
-2. **Resource Efficiency**: One set of agents serves multiple Claude Code instances
+2. **Resource Efficiency**: One set of agents serves multiple Claude Code instances  
 3. **Session Management**: Automatic cleanup prevents orphaned processes
-4. **Graceful Degradation**: Works even if management service is unavailable
+4. **Multi-Project Support**: Handle multiple projects simultaneously
+5. **Dynamic Port Allocation**: Prevents conflicts across instances
 
 ## API Endpoints
 
@@ -137,9 +138,18 @@ node dist/mcp-project-launcher.js engineering-manager /path/to/project
 - Circuit breakers for inter-service communication
 - Load testing validation
 
+## Review Notes
+
+**TODO: Evaluate Standalone Mode Necessity**
+- Current standalone mode may be redundant given split architecture benefits
+- Consider removing standalone mode entirely to simplify system
+- All benefits point toward split architecture being superior
+- Standalone only adds complexity without clear advantage
+
 ## Next Steps
 
 The split architecture is now testable and provides the foundation for Phase 2 enhancements:
 - Global persona servers for cross-project knowledge
 - Enhanced tool distribution
 - Hierarchical context system
+- Consider removing standalone mode entirely
