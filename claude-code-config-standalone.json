@@ -4,33 +4,36 @@
       "type": "stdio",
       "command": "node",
       "args": [
-        "/Users/jhanna/multi-agent/dist/mcp-project-launcher.js",
+        "/Users/jhanna/multi-agent/dist/standalone-agent.js",
         "engineering-manager"
       ],
       "env": {
-        "AGENT_ROLE": "engineering-manager"
+        "AGENT_ROLE": "engineering-manager",
+        "AGENT_WORKSPACE": "/Users/jhanna/multi-agent"
       }
     },
     "product-manager": {
       "type": "stdio",
       "command": "node",
       "args": [
-        "/Users/jhanna/multi-agent/dist/mcp-project-launcher.js",
+        "/Users/jhanna/multi-agent/dist/standalone-agent.js",
         "product-manager"
       ],
       "env": {
-        "AGENT_ROLE": "product-manager"
+        "AGENT_ROLE": "product-manager",
+        "AGENT_WORKSPACE": "/Users/jhanna/multi-agent"
       }
     },
     "qa-manager": {
       "type": "stdio",
       "command": "node",
       "args": [
-        "/Users/jhanna/multi-agent/dist/mcp-project-launcher.js",
+        "/Users/jhanna/multi-agent/dist/standalone-agent.js",
         "qa-manager"
       ],
       "env": {
-        "AGENT_ROLE": "qa-manager"
+        "AGENT_ROLE": "qa-manager",
+        "AGENT_WORKSPACE": "/Users/jhanna/multi-agent"
       }
     }
   }

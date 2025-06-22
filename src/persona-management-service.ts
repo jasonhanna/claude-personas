@@ -7,6 +7,7 @@ import { createServer } from 'net';
 import yaml from 'js-yaml';
 import { AgentError, ValidationError } from './errors.js';
 import PersonaManager, { PersonaConfig, SystemConfig } from './persona-manager.js';
+import { ProjectRegistry } from './project-registry.js';
 
 // Custom error class for the persona management service
 class AgentSystemError extends AgentError {
@@ -57,6 +58,7 @@ export class PersonaManagementService {
   private server: any;
   private port: number = 3000;
   private personaManager: PersonaManager;
+  private projectRegistry: ProjectRegistry;
   
   // Registry data
   private personas = new Map<string, PersonaConfig>();
@@ -76,6 +78,7 @@ export class PersonaManagementService {
 
   constructor(claudeAgentsHome?: string, multiAgentHome?: string) {
     this.personaManager = new PersonaManager(claudeAgentsHome, multiAgentHome);
+    this.projectRegistry = new ProjectRegistry(claudeAgentsHome);
     
     // Default configuration
     this.config = {
@@ -147,6 +150,8 @@ export class PersonaManagementService {
     this.app.get('/api/projects', this.handleGetProjects.bind(this));
     this.app.get('/api/projects/:hash', this.handleGetProject.bind(this));
     this.app.get('/api/projects/:hash/sessions', this.handleGetProjectSessions.bind(this));
+    this.app.post('/api/projects/agents', this.handleRegisterProjectAgent.bind(this));
+    this.app.put('/api/projects/:hash/agents/:persona/heartbeat', this.handleProjectAgentHeartbeat.bind(this));
     this.app.post('/api/sessions/register', this.handleRegisterSession.bind(this));
     this.app.put('/api/sessions/:id/heartbeat', this.handleSessionHeartbeat.bind(this));
     this.app.delete('/api/sessions/:id', this.handleRemoveSession.bind(this));
@@ -444,7 +449,7 @@ export class PersonaManagementService {
 
   private async handleGetProjects(req: Request, res: Response): Promise<void> {
     try {
-      const projects = Array.from(this.projects.values());
+      const projects = await this.projectRegistry.listProjects();
       res.json(projects);
     } catch (error) {
       throw new AgentSystemError(
@@ -458,7 +463,7 @@ export class PersonaManagementService {
   private async handleGetProject(req: Request, res: Response): Promise<void> {
     try {
       const { hash } = req.params;
-      const project = this.projects.get(hash);
+      const project = await this.projectRegistry.getProject(hash);
       
       if (!project) {
         res.status(404).json({ error: 'Project not found' });
@@ -478,14 +483,7 @@ export class PersonaManagementService {
   private async handleGetProjectSessions(req: Request, res: Response): Promise<void> {
     try {
       const { hash } = req.params;
-      const project = this.projects.get(hash);
-      
-      if (!project) {
-        res.status(404).json({ error: 'Project not found' });
-        return;
-      }
-      
-      const sessions = project.sessions.map(sessionId => this.sessions.get(sessionId)).filter(Boolean);
+      const sessions = await this.projectRegistry.getProjectSessions(hash);
       res.json(sessions);
     } catch (error) {
       throw new AgentSystemError(
@@ -511,42 +509,16 @@ export class PersonaManagementService {
       // Generate session ID
       const sessionId = `session_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
       
-      // Create session
-      const session: ProjectSession = {
-        sessionId,
-        projectHash,
-        pid,
-        startTime: Date.now(),
-        lastActivity: Date.now(),
-        workingDirectory
-      };
-      
-      // Add to sessions registry
-      this.sessions.set(sessionId, session);
-      
-      // Add to or create project registry
-      let project = this.projects.get(projectHash);
-      if (!project) {
-        project = {
-          hash: projectHash,
-          workingDirectory,
-          agents: [],
-          sessions: []
-        };
-        this.projects.set(projectHash, project);
-      }
-      
-      project.sessions.push(sessionId);
+      // Register with project registry
+      await this.projectRegistry.registerProject({ projectHash, workingDirectory });
+      await this.projectRegistry.registerSession({ sessionId, projectHash, pid });
       
       console.log(`[${new Date().toISOString()}] Registered session ${sessionId} for project ${projectHash}`);
       
       res.status(201).json({
         sessionId,
-        project: {
-          hash: projectHash,
-          existingAgents: project.agents,
-          totalSessions: project.sessions.length
-        }
+        projectHash,
+        status: 'session registered'
       });
     } catch (error) {
       if (error instanceof AgentSystemError) {
@@ -563,21 +535,11 @@ export class PersonaManagementService {
   private async handleSessionHeartbeat(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params;
-      const session = this.sessions.get(id);
-      
-      if (!session) {
-        res.status(404).json({ error: 'Session not found' });
-        return;
-      }
-      
-      session.lastActivity = Date.now();
+      await this.projectRegistry.updateSessionActivity(id);
       res.json({ status: 'heartbeat received' });
-    } catch (error) {
-      throw new AgentSystemError(
-        'Failed to update session heartbeat',
-        'SESSION_HEARTBEAT_ERROR',
-        'persona-management-service'
-      );
+    } catch (error: any) {
+      console.debug(`Session heartbeat failed for ${req.params.id}:`, error.message);
+      res.status(200).json({ status: 'heartbeat failed', recoverable: true });
     }
   }
 
@@ -585,36 +547,63 @@ export class PersonaManagementService {
     try {
       const { id } = req.params;
       
-      const session = this.sessions.get(id);
-      if (!session) {
-        res.status(404).json({ error: 'Session not found' });
-        return;
-      }
-      
-      // Remove from sessions registry
-      this.sessions.delete(id);
-      
-      // Remove from project
-      const project = this.projects.get(session.projectHash);
-      if (project) {
-        project.sessions = project.sessions.filter(sessionId => sessionId !== id);
-        
-        // If no more sessions, consider cleaning up project agents
-        if (project.sessions.length === 0) {
-          console.log(`[${new Date().toISOString()}] Last session removed for project ${session.projectHash}, project agents may be cleaned up`);
-          // TODO: Implement project agent cleanup
-        }
-      }
-      
+      await this.projectRegistry.removeSession(id);
       console.log(`[${new Date().toISOString()}] Removed session ${id}`);
       
       res.json({ status: 'session removed' });
-    } catch (error) {
+    } catch (error: any) {
       throw new AgentSystemError(
-        'Failed to remove session',
+        `Failed to remove session: ${error.message}`,
         'SESSION_REMOVE_ERROR',
         'persona-management-service'
       );
+    }
+  }
+
+  private async handleRegisterProjectAgent(req: Request, res: Response): Promise<void> {
+    try {
+      const { projectHash, persona, port, workingDirectory, pid } = req.body;
+      
+      if (!projectHash || !persona || !port || !workingDirectory || !pid) {
+        throw new AgentSystemError(
+          'projectHash, persona, port, workingDirectory, and pid are required',
+          'VALIDATION_ERROR',
+          'persona-management-service'
+        );
+      }
+      
+      // Register with project registry
+      await this.projectRegistry.registerProject({ projectHash, workingDirectory });
+      await this.projectRegistry.registerAgent({ projectHash, persona, port, pid });
+      
+      console.log(`[${new Date().toISOString()}] Registered project agent ${persona} for project ${projectHash} on port ${port}`);
+      
+      res.json({ 
+        status: 'agent registered',
+        projectHash,
+        persona,
+        port 
+      });
+    } catch (error: any) {
+      throw new AgentSystemError(
+        `Failed to register project agent: ${error.message}`,
+        'PROJECT_AGENT_REGISTRATION_ERROR',
+        'persona-management-service'
+      );
+    }
+  }
+
+  private async handleProjectAgentHeartbeat(req: Request, res: Response): Promise<void> {
+    try {
+      const { hash: projectHash, persona } = req.params;
+      const { pid } = req.body;
+      
+      await this.projectRegistry.updateAgentActivity(projectHash, persona, pid);
+      
+      res.json({ status: 'heartbeat received' });
+    } catch (error: any) {
+      console.debug(`Project agent heartbeat failed for ${req.params.hash}/${req.params.persona}:`, error.message);
+      res.status(200).json({ status: 'heartbeat failed', recoverable: true });
     }
   }
 
@@ -786,6 +775,9 @@ export class PersonaManagementService {
       
       // Initialize directory structure and load personas
       await this.initializeSystem();
+      
+      // Initialize project registry
+      await this.projectRegistry.initialize();
       
       // Start cleanup system
       this.startCleanupSystem();
