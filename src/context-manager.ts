@@ -262,11 +262,11 @@ export class ContextManager {
           try {
             // Create global version of project memory
             const globalMemory = {
-              ...memory,
-              source: 'global' as const,
-              tags: [...memory.tags, `from-project-${projectHash.substring(0, 8)}`]
+              content: memory.content,
+              tags: [...memory.tags, `from-project-${projectHash.substring(0, 8)}`],
+              confidence: memory.confidence,
+              source: 'global' as const
             };
-            delete globalMemory.projectHash;
 
             await this.saveMemory(persona, globalMemory);
             result.syncedCount++;
@@ -285,10 +285,10 @@ export class ContextManager {
           try {
             // Create project version of global memory
             const projectMemory = {
-              ...memory,
-              source: 'project' as const,
-              projectHash,
-              tags: [...memory.tags, 'from-global']
+              content: memory.content,
+              tags: [...memory.tags, 'from-global'],
+              confidence: memory.confidence,
+              source: 'project' as const
             };
 
             await this.saveMemory(persona, projectMemory, projectHash);
@@ -317,8 +317,8 @@ export class ContextManager {
   private async loadProjectMemories(persona: string, projectHash: string): Promise<MemoryEntry[]> {
     const memoryDir = path.join(this.projectsDir, projectHash, 'memories');
     const memories = await this.loadMemoriesFromDir(memoryDir);
-    // Filter memories that match the persona or have no persona restriction
-    return memories.filter(memory => !memory.projectHash || memory.projectHash === projectHash);
+    // Return all memories from the project directory (they are already project-specific by location)
+    return memories;
   }
 
   /**
@@ -518,10 +518,14 @@ export class ContextManager {
     index.memories = index.memories.filter(m => m.id !== memory.id);
     
     // Add new entry
+    const timestamp = memory.timestamp instanceof Date 
+      ? memory.timestamp.toISOString() 
+      : new Date(memory.timestamp).toISOString();
+    
     index.memories.push({
       id: memory.id,
       tags: memory.tags,
-      timestamp: memory.timestamp.toISOString()
+      timestamp
     });
 
     // Keep only last 1000 entries
