@@ -49,7 +49,7 @@ You should see your agents listed:
 
 ```bash
 # Test an agent
-claude --mcp-server engineering-manager "introduce yourself"
+claude engineering-manager "introduce yourself"
 ```
 
 ## Setup Options
@@ -75,9 +75,9 @@ claude mcp list
 
 ### Test Agent Functionality
 ```bash
-claude --mcp-server engineering-manager "introduce yourself"
-claude --mcp-server product-manager "what are your capabilities?"
-claude --mcp-server qa-manager "how can you help with testing?"
+claude engineering-manager "introduce yourself"
+claude product-manager "what are your capabilities?"
+claude qa-manager "how can you help with testing?"
 ```
 
 ## Troubleshooting

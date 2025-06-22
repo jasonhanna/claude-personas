@@ -59,12 +59,12 @@ Agent personalities, memories, and acquired knowledge will be stored outside the
                      │                      │
                      │ STDIO                │ STDIO
                      ▼                      ▼
-        ┌────────────────────-┐  ┌────────────────────┐
+        ┌─────────────────────┐  ┌────────────────────┐
         │ Project Agent:      │  │ Project Agent:     │
         │ Engineering Manager │  │ Product Manager    │
         │ Port: 30001         │  │ Port: 30002        │
         │ Dir: ./crosswalks   │  │ Dir: ./crosswalks  │
-        └──────────┬─────────-┘  └──────────┬─────────┘
+        └──────────┬──────────┘  └──────────┬─────────┘
                    │                        │
                    │ HTTP                   │ HTTP
                    ▼                        ▼
@@ -164,31 +164,31 @@ interface ProjectAgentInfo {
 **Engineering Manager Recommendation**: Start with Management Service + single project agent to validate approach, defer global agents until Phase 2 to reduce initial complexity.
 
 #### 1.1 Persona Management Service
-- [ ] New `persona-management-service.ts` running on port 3000
-- [ ] RESTful API for persona CRUD operations
-- [ ] Agent registry and health monitoring
-- [ ] Dynamic persona loading from `~/.claude-agents/personas/`
-- [ ] First-run initialization to copy templates from repo to user directory
-- [ ] Remove hardcoded role validation, support any persona file name
-- [ ] **NEW**: Comprehensive error handling and logging from day 1
-- [ ] **NEW**: TTL-based cleanup system for orphaned processes
+- [x] New `persona-management-service.ts` running on port 3000
+- [x] RESTful API for persona CRUD operations
+- [x] Agent registry and health monitoring
+- [x] Dynamic persona loading from `~/.claude-agents/personas/`
+- [x] First-run initialization to copy templates from repo to user directory
+- [x] Remove hardcoded role validation, support any persona file name
+- [x] **NEW**: Comprehensive error handling and logging from day 1
+- [x] **NEW**: TTL-based cleanup system for orphaned processes
 
 #### 1.2 Create Project Agent Launcher
-- [ ] New `project-agent.ts` that launches agents in project context
-- [ ] **ENHANCED**: Robust port allocation with conflict detection and retry logic
-- [ ] Project agent registry in `~/.claude-agents/registry/projects.json`
-- [ ] Session management for multiple Claude Code instances per project
-- [ ] Project hash generation from working directory
-- [ ] STDIO proxy creation for subsequent Claude Code instances
-- [ ] **ENHANCED**: Heartbeat system with TTL-based cleanup (5 min default)
-- [ ] **NEW**: Process monitoring via PID validation
-- [ ] **NEW**: Graceful degradation when management service unreachable
-- [ ] Automatic cleanup when all sessions end
+- [x] New `mcp-project-launcher.ts` that launches agents in project context
+- [x] **ENHANCED**: Robust port allocation with conflict detection and retry logic
+- [x] Project agent registry in `~/.claude-agents/registry/projects.json`
+- [x] Session management for multiple Claude Code instances per project
+- [x] Project hash generation from working directory
+- [x] STDIO proxy creation for subsequent Claude Code instances
+- [x] **ENHANCED**: Heartbeat system with TTL-based cleanup (5 min default)
+- [x] **NEW**: Process monitoring via PID validation
+- [x] **NEW**: Graceful degradation when management service unreachable
+- [x] Automatic cleanup when all sessions end
 
 #### 1.3 Minimal PoC Implementation
-- [ ] **NEW**: Build minimal management service + single project agent first
+- [x] **NEW**: Build minimal management service + single project agent first
 - [ ] **NEW**: Validate port allocation and session management under load
-- [ ] **NEW**: Standardized error handling across all services
+- [x] **NEW**: Standardized error handling across all services
    ```typescript
    class AgentSystemError extends Error {
      constructor(
@@ -207,9 +207,9 @@ interface ProjectAgentInfo {
 - [ ] Update tool registration logic
 
 #### 1.5 Update Communication Layer
-- [ ] Project agents proxy persona requests to global agents
+- [x] Project agents proxy persona requests to global agents
 - [ ] **NEW**: Authentication following existing codebase patterns (JWT-based)
-- [ ] Add project context to all global agent requests
+- [x] Add project context to all global agent requests
 - [ ] **NEW**: Circuit breakers for inter-service communication
 
 ### Phase 2: Context Management Enhancement (Week 3-4)
@@ -710,11 +710,11 @@ The following specifications should be defined during implementation phases:
 ## Next Steps (Updated Based on Engineering Manager Review)
 
 1. ✅ **Complete**: Engineering Manager review and feedback incorporation
-2. **Create PoC**: Build minimal management service + single project agent
+2. **Complete**: Build minimal management service + single project agent ✅
 3. **Load Testing**: Validate port allocation and session management under load
 4. **Security Review**: Define authentication model following existing JWT patterns
 5. **Documentation**: Create troubleshooting guide for distributed setup
-6. **Begin Phase 1**: Start with simplified approach (Management Service first)
+6. **Complete**: Start with simplified approach (Management Service first) ✅
 7. **Establish Testing**: Implement essential test scenarios identified in review
 
 ---

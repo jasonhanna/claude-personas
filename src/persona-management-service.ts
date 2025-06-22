@@ -8,6 +8,20 @@ import yaml from 'js-yaml';
 import { AgentError, ValidationError } from './errors.js';
 import PersonaManager, { PersonaConfig, SystemConfig } from './persona-manager.js';
 import { ProjectRegistry } from './project-registry.js';
+import {
+  PersonaConfigSchema,
+  PersonaUpdateSchema,
+  ProjectSessionSchema,
+  ProjectAgentSchema,
+  AgentHeartbeatSchema,
+  PortAllocationSchema,
+  validateRequest,
+  validatePathParam,
+  IdParamSchema,
+  HashParamSchema,
+  SessionIdParamSchema,
+  PortParamSchema
+} from './validation-schemas.js';
 
 // Custom error class for the persona management service
 class AgentSystemError extends AgentError {
@@ -134,27 +148,27 @@ export class PersonaManagementService {
 
     // Persona Management
     this.app.get('/api/personas', this.handleGetPersonas.bind(this));
-    this.app.post('/api/personas', this.handleCreatePersona.bind(this));
-    this.app.put('/api/personas/:id', this.handleUpdatePersona.bind(this));
-    this.app.delete('/api/personas/:id', this.handleDeletePersona.bind(this));
-    this.app.post('/api/personas/:id/reset', this.handleResetPersona.bind(this));
+    this.app.post('/api/personas', validateRequest(PersonaConfigSchema), this.handleCreatePersona.bind(this));
+    this.app.put('/api/personas/:id', validatePathParam('id', IdParamSchema), validateRequest(PersonaUpdateSchema), this.handleUpdatePersona.bind(this));
+    this.app.delete('/api/personas/:id', validatePathParam('id', IdParamSchema), this.handleDeletePersona.bind(this));
+    this.app.post('/api/personas/:id/reset', validatePathParam('id', IdParamSchema), this.handleResetPersona.bind(this));
 
     // Agent Management
     this.app.get('/api/agents', this.handleGetAgents.bind(this));
     this.app.post('/api/agents/start', this.handleStartAgent.bind(this));
-    this.app.post('/api/agents/:id/stop', this.handleStopAgent.bind(this));
-    this.app.get('/api/agents/:id/logs', this.handleGetAgentLogs.bind(this));
-    this.app.get('/api/agents/:id/health', this.handleGetAgentHealth.bind(this));
+    this.app.post('/api/agents/:id/stop', validatePathParam('id', IdParamSchema), this.handleStopAgent.bind(this));
+    this.app.get('/api/agents/:id/logs', validatePathParam('id', IdParamSchema), this.handleGetAgentLogs.bind(this));
+    this.app.get('/api/agents/:id/health', validatePathParam('id', IdParamSchema), this.handleGetAgentHealth.bind(this));
 
     // Project & Session Management
     this.app.get('/api/projects', this.handleGetProjects.bind(this));
-    this.app.get('/api/projects/:hash', this.handleGetProject.bind(this));
-    this.app.get('/api/projects/:hash/sessions', this.handleGetProjectSessions.bind(this));
-    this.app.post('/api/projects/agents', this.handleRegisterProjectAgent.bind(this));
-    this.app.put('/api/projects/:hash/agents/:persona/heartbeat', this.handleProjectAgentHeartbeat.bind(this));
-    this.app.post('/api/sessions/register', this.handleRegisterSession.bind(this));
-    this.app.put('/api/sessions/:id/heartbeat', this.handleSessionHeartbeat.bind(this));
-    this.app.delete('/api/sessions/:id', this.handleRemoveSession.bind(this));
+    this.app.get('/api/projects/:hash', validatePathParam('hash', HashParamSchema), this.handleGetProject.bind(this));
+    this.app.get('/api/projects/:hash/sessions', validatePathParam('hash', HashParamSchema), this.handleGetProjectSessions.bind(this));
+    this.app.post('/api/projects/agents', validateRequest(ProjectAgentSchema), this.handleRegisterProjectAgent.bind(this));
+    this.app.put('/api/projects/:hash/agents/:persona/heartbeat', validatePathParam('hash', HashParamSchema), validatePathParam('persona', IdParamSchema), validateRequest(AgentHeartbeatSchema), this.handleProjectAgentHeartbeat.bind(this));
+    this.app.post('/api/sessions/register', validateRequest(ProjectSessionSchema), this.handleRegisterSession.bind(this));
+    this.app.put('/api/sessions/:id/heartbeat', validatePathParam('id', SessionIdParamSchema), this.handleSessionHeartbeat.bind(this));
+    this.app.delete('/api/sessions/:id', validatePathParam('id', SessionIdParamSchema), this.handleRemoveSession.bind(this));
 
     // System Management
     this.app.get('/api/system/health', this.handleSystemHealth.bind(this));
@@ -162,8 +176,8 @@ export class PersonaManagementService {
     this.app.post('/api/system/initialize', this.handleInitialize.bind(this));
 
     // Port allocation
-    this.app.post('/api/ports/allocate', this.handleAllocatePort.bind(this));
-    this.app.delete('/api/ports/:port', this.handleReleasePort.bind(this));
+    this.app.post('/api/ports/allocate', validateRequest(PortAllocationSchema), this.handleAllocatePort.bind(this));
+    this.app.delete('/api/ports/:port', validatePathParam('port', PortParamSchema), this.handleReleasePort.bind(this));
 
     // Error handling middleware
     this.app.use((err: Error, req: Request, res: Response, next: any) => {
@@ -243,18 +257,10 @@ export class PersonaManagementService {
     }
   }
 
-  private async handleCreatePersona(req: Request, res: Response): Promise<void> {
+  private async handleCreatePersona(req: any, res: Response): Promise<void> {
     try {
-      const personaData = req.body as PersonaConfig;
-      
-      // Validate required fields
-      if (!personaData.name || !personaData.role) {
-        throw new AgentSystemError(
-          'Name and role are required',
-          'VALIDATION_ERROR',
-          'persona-management-service'
-        );
-      }
+      const personaData = req.validatedBody;
+      // Validation is now handled by middleware
       
       // Check if persona already exists
       if (this.personas.has(personaData.role)) {
@@ -494,17 +500,10 @@ export class PersonaManagementService {
     }
   }
 
-  private async handleRegisterSession(req: Request, res: Response): Promise<void> {
+  private async handleRegisterSession(req: any, res: Response): Promise<void> {
     try {
-      const { projectHash, workingDirectory, pid } = req.body;
-      
-      if (!projectHash || !workingDirectory || !pid) {
-        throw new AgentSystemError(
-          'projectHash, workingDirectory, and pid are required',
-          'VALIDATION_ERROR',
-          'persona-management-service'
-        );
-      }
+      const { projectHash, workingDirectory, pid } = req.validatedBody;
+      // Validation is now handled by middleware
       
       // Generate session ID
       const sessionId = `session_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
@@ -560,17 +559,10 @@ export class PersonaManagementService {
     }
   }
 
-  private async handleRegisterProjectAgent(req: Request, res: Response): Promise<void> {
+  private async handleRegisterProjectAgent(req: any, res: Response): Promise<void> {
     try {
-      const { projectHash, persona, port, workingDirectory, pid } = req.body;
-      
-      if (!projectHash || !persona || !port || !workingDirectory || !pid) {
-        throw new AgentSystemError(
-          'projectHash, persona, port, workingDirectory, and pid are required',
-          'VALIDATION_ERROR',
-          'persona-management-service'
-        );
-      }
+      const { projectHash, persona, port, workingDirectory, pid } = req.validatedBody;
+      // Validation is now handled by middleware
       
       // Register with project registry
       await this.projectRegistry.registerProject({ projectHash, workingDirectory });

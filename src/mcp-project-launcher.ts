@@ -5,6 +5,7 @@ import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import { ProjectRegistry } from './project-registry.js';
+import { formatUserError, logUserFriendlyError } from './user-friendly-errors.js';
 
 interface MCPRequest {
   jsonrpc: string;
@@ -32,6 +33,9 @@ export class MCPProjectLauncher {
   private projectAgent: ChildProcess | null = null;
   private agentPort: number | null = null;
   private registry: ProjectRegistry;
+  private managementServiceAvailable: boolean = false;
+  private retryAttempts: number = 0;
+  private maxRetries: number = 3;
 
   constructor(role: string, projectDir: string) {
     this.role = role;
@@ -43,6 +47,15 @@ export class MCPProjectLauncher {
   async launch(): Promise<void> {
     try {
       console.error(`[MCP] Launching ${this.role} agent for project ${this.projectHash}`);
+      
+      // Check management service availability
+      this.managementServiceAvailable = await this.checkManagementService();
+      
+      if (!this.managementServiceAvailable) {
+        console.error(`[MCP] Management service unavailable - running in standalone mode`);
+        await this.launchStandaloneMode();
+        return;
+      }
       
       // Initialize registry
       await this.registry.initialize();
@@ -64,8 +77,85 @@ export class MCPProjectLauncher {
       await this.startStdioServer();
       
     } catch (error: any) {
-      console.error(`[MCP] Failed to launch project agent: ${error.message}`);
-      throw error;
+      logUserFriendlyError(error, `launching ${this.role} agent`);
+      
+      // Try standalone mode as fallback
+      if (this.managementServiceAvailable) {
+        console.error(`[MCP] Attempting standalone mode as fallback...`);
+        try {
+          await this.launchStandaloneMode();
+        } catch (fallbackError: any) {
+          const combinedError = new Error(`Cannot launch ${this.role} agent: ${error.message}. Standalone fallback also failed: ${fallbackError.message}`);
+          logUserFriendlyError(combinedError, 'agent startup');
+          throw combinedError;
+        }
+      } else {
+        throw error;
+      }
+    }
+  }
+
+  private async checkManagementService(): Promise<boolean> {
+    try {
+      const response = await fetch('http://localhost:3000/health', {
+        method: 'GET',
+        signal: AbortSignal.timeout(5000) // 5 second timeout
+      });
+      return response.ok;
+    } catch (error: any) {
+      // Use friendly error message for management service issues
+      if (error.name === 'AbortError' || error.message.includes('timeout')) {
+        console.error(formatUserError('Management service health check timed out', 'service check'));
+      } else {
+        console.error(formatUserError(error, 'management service connectivity'));
+      }
+      return false;
+    }
+  }
+
+  private async launchStandaloneMode(): Promise<void> {
+    console.error(`[MCP] Launching ${this.role} in standalone mode`);
+    
+    try {
+      // Import and launch standalone agent
+      const { spawn } = await import('child_process');
+      const standaloneAgentPath = path.join(__dirname, 'standalone-agent.js');
+      
+      // Check if standalone agent exists
+      const fs = await import('fs');
+      if (!fs.existsSync(standaloneAgentPath)) {
+        throw new Error(`Standalone agent not found at: ${standaloneAgentPath}`);
+      }
+      
+      // Execute standalone agent directly via stdio
+      const standaloneProcess = spawn('node', [standaloneAgentPath, this.role], {
+        cwd: this.projectDir,
+        stdio: ['inherit', 'inherit', 'inherit'],
+        env: {
+          ...process.env,
+          AGENT_ROLE: this.role,
+          AGENT_WORKSPACE: this.projectDir,
+          FALLBACK_MODE: 'true'
+        }
+      });
+      
+      standaloneProcess.on('error', (error) => {
+        console.error(`[MCP] Standalone agent error: ${error.message}`);
+        process.exit(1);
+      });
+      
+      standaloneProcess.on('exit', (code) => {
+        console.error(`[MCP] Standalone agent exited with code ${code}`);
+        process.exit(code || 0);
+      });
+      
+      // Replace current process
+      console.error(`[MCP] Switched to standalone mode for ${this.role}`);
+      
+    } catch (error: any) {
+      const standaloneError = new Error(`STANDALONE_FALLBACK_FAILED: ${error.message}`);
+      logUserFriendlyError(standaloneError, 'standalone mode fallback');
+      throw standaloneError;
     }
   }
 
@@ -143,10 +233,10 @@ export class MCPProjectLauncher {
   }
 
   private async connectToExistingAgent(): Promise<void> {
-    // Register session with management service
+    // Register session with management service with retry logic
     const sessionId = this.generateSessionId();
     
-    try {
+    await this.retryWithBackoff(async () => {
       const response = await fetch('http://localhost:3000/api/sessions/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -155,15 +245,18 @@ export class MCPProjectLauncher {
           projectHash: this.projectHash,
           workingDirectory: this.projectDir,
           pid: process.pid
-        })
+        }),
+        signal: AbortSignal.timeout(10000) // 10 second timeout
       });
       
       if (!response.ok) {
-        console.error('[MCP] Failed to register session with management service');
+        const errorText = await response.text();
+        throw new Error(`Session registration failed: ${response.status} ${errorText}`);
       }
-    } catch (error: any) {
-      console.error('[MCP] Management service unavailable:', error.message);
-    }
+      
+      console.error('[MCP] Successfully registered session with management service');
+      return response.json();
+    }, 'session registration');
   }
 
   private async startNewProjectAgent(): Promise<void> {
@@ -233,7 +326,7 @@ export class MCPProjectLauncher {
   }
 
   private async registerAgent(): Promise<void> {
-    try {
+    await this.retryWithBackoff(async () => {
       await this.registry.registerProject({
         projectHash: this.projectHash,
         workingDirectory: this.projectDir
@@ -247,9 +340,39 @@ export class MCPProjectLauncher {
       });
       
       console.error(`[MCP] Registered ${this.role} agent with project registry`);
-    } catch (error: any) {
-      console.error(`[MCP] Failed to register agent: ${error.message}`);
+    }, 'agent registration');
+  }
+
+  private async retryWithBackoff<T>(
+    operation: () => Promise<T>,
+    operationName: string
+  ): Promise<T> {
+    let lastError: Error = new Error('Unknown error');
+    
+    for (let attempt = 0; attempt <= this.maxRetries; attempt++) {
+      try {
+        return await operation();
+      } catch (error: any) {
+        lastError = error;
+        
+        if (attempt === this.maxRetries) {
+          console.error(`[MCP] ${operationName} failed after ${this.maxRetries + 1} attempts: ${error.message}`);
+          break;
+        }
+        
+        const delay = Math.min(1000 * Math.pow(2, attempt), 10000); // Exponential backoff, max 10s
+        console.error(`[MCP] ${operationName} failed (attempt ${attempt + 1}/${this.maxRetries + 1}), retrying in ${delay}ms: ${error.message}`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
     }
+    
+    // If we're here, all retries failed
+    if (!this.managementServiceAvailable) {
+      console.error(`[MCP] ${operationName} failed - management service unavailable, continuing in degraded mode`);
+      return {} as T; // Return empty object to continue operation
+    }
+    
+    throw lastError;
   }
 
   private async allocatePort(): Promise<number> {

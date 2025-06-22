@@ -5,12 +5,15 @@
   "type": "module",
   "main": "dist/standalone-agent.js",
   "scripts": {
-    "build": "tsc && chmod +x dist/standalone-agent.js && chmod +x dist/start-persona-service.js && npm run generate-config",
+    "build": "tsc && chmod +x dist/standalone-agent.js && chmod +x dist/start-persona-service.js && chmod +x dist/mcp-project-launcher.js && chmod +x dist/project-agent-server.js && npm run generate-config",
     "generate-config": "node scripts/generate-claude-config.js",
     "setup-mcp": "tsx scripts/setup-mcp.ts",
     "agent": "node dist/standalone-agent.js",
     "persona-service": "tsx src/start-persona-service.ts",
     "persona-service:prod": "node dist/start-persona-service.js",
+    "mcp-launcher": "node dist/mcp-project-launcher.js",
+    "project-agent": "node dist/project-agent-server.js",
+    "status": "node scripts/check-status.js",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage"

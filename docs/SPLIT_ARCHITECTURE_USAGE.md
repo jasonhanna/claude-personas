@@ -21,9 +21,15 @@ node scripts/enable-split-architecture.js
 
 ```bash
 # From any project directory
-claude --mcp-server engineering-manager "help me review this code"
-claude --mcp-server product-manager "analyze user requirements"
-claude --mcp-server qa-manager "create test cases"
+# The MCP servers are automatically available through the configuration
+claude "Ask the engineering manager to help me review this code"
+claude "Ask the product manager to analyze user requirements"
+claude "Ask the qa manager to create test cases"
+
+# Or use the MCP tools directly in your Claude conversation:
+# - mcp__engineering-manager__* tools
+# - mcp__product-manager__* tools
+# - mcp__qa-manager__* tools
 ```
 
 ### 3. Test the System
@@ -108,7 +114,7 @@ curl http://localhost:3000/api/projects
 ### Running in Debug Mode
 ```bash
 # Set debug environment variable
-DEBUG=mcp:* claude --mcp-server engineering-manager "test"
+DEBUG=mcp:* claude "Ask the engineering manager to test something"
 ```
 
 ### Manual Testing

@@ -152,7 +152,7 @@ async function runTests() {
   console.log('\n✨ Split architecture is ' + (allPassed ? 'working!' : 'partially working.'));
   console.log('\nTo use with Claude Code:');
   console.log('1. Enable split architecture: node scripts/enable-split-architecture.js');
-  console.log('2. Use an agent: claude --mcp-server engineering-manager "help me with my code"');
+  console.log('2. Use an agent: claude "Ask the engineering manager to help me with my code"');
 }
 
 // Run tests

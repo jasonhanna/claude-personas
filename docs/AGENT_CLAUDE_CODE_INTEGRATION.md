@@ -14,7 +14,7 @@ Yes! Each agent **actively uses Claude Code** to interpret and complete tasks. H
 
 ```bash
 # 1. You call the agent
-claude --mcp-server engineering-manager "Review this authentication module"
+claude "Ask the engineering manager to review this authentication module"
 
 # 2. Agent internally executes Claude Code with its context
 # Step 2a: Agent creates .claude-agents/engineering-manager-context.md
@@ -165,19 +165,19 @@ claude-agent qa-manager --project ~/my-app &
 # Each agent is now a Claude Code expert in their domain!
 
 # Product planning
-claude --mcp-server product-manager "Analyze yesterday's user feedback and suggest feature priorities"
+claude product-manager "Analyze yesterday's user feedback and suggest feature priorities"
 
 # Technical review
-claude --mcp-server engineering-manager "Review the new API endpoints for security and performance"
+claude engineering-manager "Review the new API endpoints for security and performance"
 
 # Quality assurance  
-claude --mcp-server qa-manager "Identify testing gaps in our CI/CD pipeline"
+claude qa-manager "Identify testing gaps in our CI/CD pipeline"
 
 # Architecture decisions
-claude --mcp-server engineering-manager "Should we refactor the user service into microservices?"
+claude engineering-manager "Should we refactor the user service into microservices?"
 
 # Feature estimation
-claude --mcp-server engineering-manager "Estimate effort for implementing real-time chat"
+claude engineering-manager "Estimate effort for implementing real-time chat"
 ```
 
 ## Key Benefits

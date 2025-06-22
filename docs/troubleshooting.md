@@ -100,7 +100,7 @@ claude-agent engineering-manager
 sleep 3
 
 # 3. Try connecting again
-claude --mcp-server engineering-manager "test"
+claude engineering-manager "test"
 ```
 
 #### Claude CLI Command Not Found

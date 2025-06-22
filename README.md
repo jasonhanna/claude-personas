@@ -12,14 +12,14 @@ npm install && npm run build
 npm run setup-mcp
 
 # 3. Use any agent from any project
-claude --mcp-server engineering-manager "introduce yourself"
-claude --mcp-server product-manager "help me prioritize features"
-claude --mcp-server qa-manager "review my testing strategy"
+claude "Ask the engineering manager to introduce themselves"
+claude "Ask the product manager to help me prioritize features"
+claude "Ask the qa manager to review my testing strategy"
 ```
 
 ## ✨ Key Features
 
-- **🤖 Multiple Personas**: Engineering Manager (Alex), Product Manager (Sarah), QA Manager (Jordan) with specialized expertise
+- **🤖 Multiple Personas**: Engineering Manager (Alex), Product Manager (Sarah), QA Manager (Marcus) with specialized expertise
 - **🧠 Persistent Memory**: Each agent maintains context and learns from interactions 
 - **📁 Project Flexibility**: Use from any project directory - agents adapt to your codebase
 - **⚡ Easy Setup**: One-time registration, then use agents from anywhere
@@ -31,13 +31,13 @@ Each agent brings **specialized domain expertise** and maintains memory across i
 
 ```bash
 # Alex (Engineering Manager) - Technical architecture and code quality
-claude --mcp-server engineering-manager "review this API design for scalability"
+claude "Ask the engineering manager to review this API design for scalability"
 
 # Sarah (Product Manager) - Business requirements and feature prioritization  
-claude --mcp-server product-manager "help prioritize these user stories"
+claude "Ask the product manager to help prioritize these user stories"
 
-# Jordan (QA Manager) - Testing strategy and quality assurance
-claude --mcp-server qa-manager "design comprehensive test plan for checkout flow"
+# Marcus (QA Manager) - Testing strategy and quality assurance
+claude "Ask the qa manager to design comprehensive test plan for checkout flow"
 ```
 
 **Each agent uses the `get_agent_perspective` tool** to provide specialized insights while maintaining their accumulated knowledge and communication style.
@@ -69,24 +69,30 @@ claude --mcp-server qa-manager "design comprehensive test plan for checkout flow
           │
           │ (MCP Protocol)
           ▼
-┌─────────────────────┐     ┌──────────────────────┐
-│  Engineering Mgr    │     │    Product Mgr       │     ┌──────────────────┐
-│  Agent (Port 3001)  │     │  Agent (Port 3002)   │     │   QA Manager     │
-│                     │     │                      │     │ Agent (Port 3003)│
-│  • Architecture     │     │  • Requirements      │     │                  │
-│  • Code Quality     │     │  • Prioritization    │     │  • Test Strategy │
-│  • Best Practices   │     │  • User Stories      │     │  • Quality Assurance│
-└─────────────────────┘     └──────────────────────┘     └──────────────────┘
-          │                           │                            │
-          └───────────────────────────┼────────────────────────────┘
-                                      ▼
-                            ┌──────────────────┐
-                            │  Your Project    │
-                            │  Directory       │
-                            │                  │
-                            │  Works with any  │
-                            │  codebase        │
-                            └──────────────────┘
+┌─────────────────────────────────────────────────────────┐
+│               Persona Management Service                │
+│                    (Port 3000)                         │
+│                                                         │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐    │
+│  │Engineering  │  │ Product Mgr │  │ QA Manager  │    │
+│  │Manager      │  │ Agent       │  │ Agent       │    │
+│  │Agent        │  │             │  │             │    │
+│  │• Architecture│  │• Requirements│  │• Test Strategy│  │
+│  │• Code Quality│  │• Prioritization│ │• Quality Assurance│ │
+│  │• Best Practices│ │• User Stories│  │• Bug Analysis│    │
+│  └─────────────┘  └─────────────┘  └─────────────┘    │
+└─────────────────────────────────────────────────────────┘
+          │
+          │ (Project-specific agents launched on-demand)
+          ▼
+┌──────────────────────────────────────────────────────────┐
+│              Your Project Directory                      │
+│              (Dynamic ports 30000-40000)                │
+│                                                          │
+│  • Correct working directory context                    │
+│  • File operations in your project                      │
+│  • Agents adapt to your codebase                        │
+└──────────────────────────────────────────────────────────┘
 ```
 
 ## 🔧 Setup Options
@@ -114,8 +120,8 @@ node dist/standalone-agent.js engineering-manager --log-console
 | Agent | Name | Role | Specialization |
 |-------|------|------|----------------|
 | `engineering-manager` | Alex Chen | Engineering Manager | Architecture, code quality, technical leadership |
-| `product-manager` | Sarah Kim | Product Manager | Requirements, prioritization, user stories |
-| `qa-manager` | Jordan Rivera | QA Manager | Testing strategy, quality assurance, bug analysis |
+| `product-manager` | Sarah Martinez | Product Manager | Requirements, prioritization, user stories |
+| `qa-manager` | Marcus Johnson | QA Manager | Testing strategy, quality assurance, bug analysis |
 
 ## 📋 Available Tools
 
