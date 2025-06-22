@@ -8,6 +8,8 @@ import yaml from 'js-yaml';
 import { AgentError, ValidationError } from './errors.js';
 import PersonaManager, { PersonaConfig, SystemConfig } from './persona-manager.js';
 import { ProjectRegistry } from './project-registry.js';
+import { ContextManager } from './context-manager.js';
+import { MemoryLockManager } from './memory-lock-manager.js';
 import {
   PersonaConfigSchema,
   PersonaUpdateSchema,
@@ -73,6 +75,8 @@ export class PersonaManagementService {
   private port: number = 3000;
   private personaManager: PersonaManager;
   private projectRegistry: ProjectRegistry;
+  private contextManager: ContextManager;
+  private lockManager: MemoryLockManager;
   
   // Registry data
   private personas = new Map<string, PersonaConfig>();
@@ -93,6 +97,8 @@ export class PersonaManagementService {
   constructor(claudeAgentsHome?: string, multiAgentHome?: string) {
     this.personaManager = new PersonaManager(claudeAgentsHome, multiAgentHome);
     this.projectRegistry = new ProjectRegistry(claudeAgentsHome);
+    this.contextManager = new ContextManager(claudeAgentsHome);
+    this.lockManager = new MemoryLockManager(claudeAgentsHome);
     
     // Default configuration
     this.config = {
@@ -178,6 +184,21 @@ export class PersonaManagementService {
     // Port allocation
     this.app.post('/api/ports/allocate', validateRequest(PortAllocationSchema), this.handleAllocatePort.bind(this));
     this.app.delete('/api/ports/:port', validatePathParam('port', PortParamSchema), this.handleReleasePort.bind(this));
+
+    // Context Management
+    this.app.post('/api/context/build', this.handleBuildContext.bind(this));
+    this.app.post('/api/context/overlay', this.handleCreateOverlay.bind(this));
+    this.app.get('/api/context/:persona/:projectHash', validatePathParam('persona', IdParamSchema), validatePathParam('projectHash', HashParamSchema), this.handleGetContext.bind(this));
+
+    // Memory Management
+    this.app.post('/api/memory/save', this.handleSaveMemory.bind(this));
+    this.app.post('/api/memory/sync', this.handleSyncMemories.bind(this));
+    this.app.get('/api/memory/:persona/history', validatePathParam('persona', IdParamSchema), this.handleGetMemoryHistory.bind(this));
+
+    // Memory Locking
+    this.app.post('/api/locks/acquire', this.handleAcquireLock.bind(this));
+    this.app.delete('/api/locks/:lockId', this.handleReleaseLock.bind(this));
+    this.app.post('/api/locks/update', this.handleUpdateMemoryWithLock.bind(this));
 
     // Error handling middleware
     this.app.use((err: Error, req: Request, res: Response, next: any) => {
@@ -750,6 +771,260 @@ export class PersonaManagementService {
     }
   }
 
+  // Context Management API Handlers
+  private async handleBuildContext(req: Request, res: Response): Promise<void> {
+    try {
+      const { persona, projectHash, workingDirectory, claudeFilePath, claudeFileContent } = req.body;
+      
+      if (!persona || !projectHash || !workingDirectory) {
+        res.status(400).json({
+          error: 'Missing required fields: persona, projectHash, workingDirectory'
+        });
+        return;
+      }
+
+      const projectContext = {
+        projectHash,
+        workingDirectory,
+        claudeFilePath,
+        claudeFileContent
+      };
+
+      const result = await this.contextManager.buildHierarchicalContext(persona, projectContext);
+      res.json(result);
+    } catch (error) {
+      throw new AgentSystemError(
+        'Failed to build context',
+        'CONTEXT_BUILD_ERROR',
+        'persona-management-service'
+      );
+    }
+  }
+
+  private async handleCreateOverlay(req: Request, res: Response): Promise<void> {
+    try {
+      const { persona, projectHash, content, workingDirectory } = req.body;
+      
+      if (!persona || !projectHash || !content || !workingDirectory) {
+        res.status(400).json({
+          error: 'Missing required fields: persona, projectHash, content, workingDirectory'
+        });
+        return;
+      }
+
+      await this.contextManager.createProjectPersonaOverlay(
+        persona,
+        projectHash,
+        content,
+        workingDirectory
+      );
+
+      res.json({ status: 'overlay created', persona, projectHash });
+    } catch (error) {
+      throw new AgentSystemError(
+        'Failed to create overlay',
+        'OVERLAY_CREATE_ERROR',
+        'persona-management-service'
+      );
+    }
+  }
+
+  private async handleGetContext(req: Request, res: Response): Promise<void> {
+    try {
+      const { persona, projectHash } = req.params;
+      const { workingDirectory } = req.query;
+
+      if (!workingDirectory) {
+        res.status(400).json({
+          error: 'Missing required query parameter: workingDirectory'
+        });
+        return;
+      }
+
+      const projectContext = {
+        projectHash,
+        workingDirectory: workingDirectory as string
+      };
+
+      const result = await this.contextManager.buildHierarchicalContext(persona, projectContext);
+      res.json(result);
+    } catch (error) {
+      throw new AgentSystemError(
+        'Failed to get context',
+        'CONTEXT_GET_ERROR',
+        'persona-management-service'
+      );
+    }
+  }
+
+  // Memory Management API Handlers
+  private async handleSaveMemory(req: Request, res: Response): Promise<void> {
+    try {
+      const { persona, content, tags, confidence, source, projectHash } = req.body;
+      
+      if (!persona || !content) {
+        res.status(400).json({
+          error: 'Missing required fields: persona, content'
+        });
+        return;
+      }
+
+      const memory = {
+        content,
+        tags: tags || [],
+        confidence: confidence || 0.8,
+        source: source || 'global'
+      };
+
+      const memoryId = await this.contextManager.saveMemory(persona, memory, projectHash);
+      res.json({ memoryId, status: 'memory saved' });
+    } catch (error) {
+      throw new AgentSystemError(
+        'Failed to save memory',
+        'MEMORY_SAVE_ERROR',
+        'persona-management-service'
+      );
+    }
+  }
+
+  private async handleSyncMemories(req: Request, res: Response): Promise<void> {
+    try {
+      const { persona, projectHash, direction } = req.body;
+      
+      if (!persona || !projectHash) {
+        res.status(400).json({
+          error: 'Missing required fields: persona, projectHash'
+        });
+        return;
+      }
+
+      const syncDirection = direction || 'project-to-global';
+      const result = await this.contextManager.synchronizeMemories(
+        persona,
+        projectHash,
+        syncDirection
+      );
+
+      res.json(result);
+    } catch (error) {
+      throw new AgentSystemError(
+        'Failed to synchronize memories',
+        'MEMORY_SYNC_ERROR',
+        'persona-management-service'
+      );
+    }
+  }
+
+  private async handleGetMemoryHistory(req: Request, res: Response): Promise<void> {
+    try {
+      const { persona } = req.params;
+      const { projectHash, limit } = req.query;
+
+      const versions = await this.lockManager.getVersionHistory(
+        'memory', // This would need to be adjusted based on actual memory ID
+        persona,
+        projectHash as string,
+        parseInt(limit as string) || 10
+      );
+
+      res.json({ versions });
+    } catch (error) {
+      throw new AgentSystemError(
+        'Failed to get memory history',
+        'MEMORY_HISTORY_ERROR',
+        'persona-management-service'
+      );
+    }
+  }
+
+  // Memory Locking API Handlers
+  private async handleAcquireLock(req: Request, res: Response): Promise<void> {
+    try {
+      const { memoryId, persona, lockedBy, projectHash, expectedVersion } = req.body;
+      
+      if (!memoryId || !persona || !lockedBy) {
+        res.status(400).json({
+          error: 'Missing required fields: memoryId, persona, lockedBy'
+        });
+        return;
+      }
+
+      const result = await this.lockManager.acquireLock(
+        memoryId,
+        persona,
+        lockedBy,
+        projectHash,
+        expectedVersion
+      );
+
+      if (result.success) {
+        res.json(result);
+      } else {
+        res.status(409).json(result);
+      }
+    } catch (error) {
+      throw new AgentSystemError(
+        'Failed to acquire lock',
+        'LOCK_ACQUIRE_ERROR',
+        'persona-management-service'
+      );
+    }
+  }
+
+  private async handleReleaseLock(req: Request, res: Response): Promise<void> {
+    try {
+      const { lockId } = req.params;
+      
+      const success = await this.lockManager.releaseLock(lockId);
+      
+      if (success) {
+        res.json({ status: 'lock released' });
+      } else {
+        res.status(404).json({ error: 'Lock not found' });
+      }
+    } catch (error) {
+      throw new AgentSystemError(
+        'Failed to release lock',
+        'LOCK_RELEASE_ERROR',
+        'persona-management-service'
+      );
+    }
+  }
+
+  private async handleUpdateMemoryWithLock(req: Request, res: Response): Promise<void> {
+    try {
+      const { memoryId, persona, content, lockId, author, projectHash } = req.body;
+      
+      if (!memoryId || !persona || !content || !lockId || !author) {
+        res.status(400).json({
+          error: 'Missing required fields: memoryId, persona, content, lockId, author'
+        });
+        return;
+      }
+
+      const result = await this.lockManager.updateMemoryWithVersioning(
+        memoryId,
+        persona,
+        content,
+        lockId,
+        author,
+        projectHash
+      );
+
+      if (result.success) {
+        res.json(result);
+      } else {
+        res.status(409).json(result);
+      }
+    } catch (error) {
+      throw new AgentSystemError(
+        'Failed to update memory with lock',
+        'MEMORY_UPDATE_ERROR',
+        'persona-management-service'
+      );
+    }
+  }
+
   async start(): Promise<void> {
     try {
       console.log(`[${new Date().toISOString()}] Starting Persona Management Service...`);
@@ -770,6 +1045,9 @@ export class PersonaManagementService {
       
       // Initialize project registry
       await this.projectRegistry.initialize();
+
+      // Initialize memory lock manager  
+      await this.lockManager.initialize();
       
       // Start cleanup system
       this.startCleanupSystem();
@@ -807,6 +1085,9 @@ export class PersonaManagementService {
         clearInterval(this.cleanupTimer);
         this.cleanupTimer = undefined;
       }
+
+      // Shutdown memory lock manager
+      await this.lockManager.shutdown();
       
       // Stop HTTP server
       if (this.server) {
