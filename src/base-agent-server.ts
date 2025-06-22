@@ -9,11 +9,12 @@ import { HttpTransport } from './transport/http-transport.js';
 import { AuthService, createDevelopmentAuthService } from './auth/auth-service.js';
 import { AgentError, ValidationError, MemoryError, CommunicationError } from './errors.js';
 import path from 'path';
-import { fileURLToPath } from 'url';
 import { createServer } from 'net';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// Use process.cwd() and relative path resolution instead of import.meta.url
+// This works for the runtime directory structure where the compiled JS files are in dist/
+// When running from built code, we need to account for being in the dist directory
+const currentDir = path.resolve(process.cwd(), 'dist');
 
 export interface PersonaConfig {
   name: string;
@@ -64,7 +65,7 @@ export class BaseAgentServer {
     this.authService = createDevelopmentAuthService(frameworkDir);
     
     // Initialize messaging system
-    const runtimeDir = path.resolve(__dirname, '../runtime');
+    const runtimeDir = path.resolve(currentDir, '../runtime');
     this.messageBroker = new MessageBroker({
       dbPath: path.join(runtimeDir, `${persona.role}-messages.db`),
       defaultTimeout: 30000,

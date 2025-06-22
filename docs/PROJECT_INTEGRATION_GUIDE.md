@@ -21,7 +21,7 @@ cd /path/to/my/project
 claude-agent engineering-manager
 
 # In another terminal
-claude --mcp-server engineering-manager "Review the API endpoints in this project"
+claude engineering-manager "Review the API endpoints in this project"
 ```
 
 ### 2. Specific Project Directory
@@ -41,11 +41,11 @@ claude-agent qa-manager
 
 # Terminal 2: Work on project A
 cd /path/to/project-a
-claude --mcp-server qa-manager "Create test plan for authentication"
+claude qa-manager "Create test plan for authentication"
 
 # Terminal 3: Work on project B  
 cd /path/to/project-b
-claude --mcp-server qa-manager "Review existing test coverage"
+claude qa-manager "Review existing test coverage"
 ```
 
 ### 4. Team Collaboration
@@ -64,33 +64,33 @@ claude-agent qa-manager --project /team/shared-repo
 ### Web Applications
 ```bash
 # Engineering Manager
-claude --mcp-server engineering-manager "Review React component architecture"
-claude --mcp-server engineering-manager "Analyze bundle size and performance"
+claude engineering-manager "Review React component architecture"
+claude engineering-manager "Analyze bundle size and performance"
 
 # Product Manager  
-claude --mcp-server product-manager "Create user stories from component requirements"
+claude product-manager "Create user stories from component requirements"
 
 # QA Manager
-claude --mcp-server qa-manager "Design E2E test scenarios for checkout flow"
+claude qa-manager "Design E2E test scenarios for checkout flow"
 ```
 
 ### APIs/Backend Services
 ```bash
 # Engineering Manager
-claude --mcp-server engineering-manager "Review database schema changes"
-claude --mcp-server engineering-manager "Assess API security best practices"
+claude engineering-manager "Review database schema changes"
+claude engineering-manager "Assess API security best practices"
 
 # QA Manager
-claude --mcp-server qa-manager "Create load testing scenarios"
+claude qa-manager "Create load testing scenarios"
 ```
 
 ### Mobile Apps
 ```bash
 # Product Manager
-claude --mcp-server product-manager "Analyze user journey for mobile onboarding"
+claude product-manager "Analyze user journey for mobile onboarding"
 
 # QA Manager  
-claude --mcp-server qa-manager "Design device compatibility test matrix"
+claude qa-manager "Design device compatibility test matrix"
 ```
 
 ## Installation Options
@@ -124,10 +124,10 @@ npm run agent engineering-manager /path/to/project
 claude-agent engineering-manager
 
 # Terminal 2
-claude --mcp-server engineering-manager "Analyze authentication patterns" --working-dir /project-a
+claude engineering-manager "Analyze authentication patterns" --working-dir /project-a
 
 # Terminal 3  
-claude --mcp-server engineering-manager "Compare with authentication in /project-b" --working-dir /project-b
+claude engineering-manager "Compare with authentication in /project-b" --working-dir /project-b
 ```
 
 ### Workflow Automation
@@ -137,10 +137,10 @@ claude --mcp-server engineering-manager "Compare with authentication in /project
 claude-agent engineering-manager --project /team/app
 
 # Review specific PR
-claude --mcp-server engineering-manager "Review PR #123: focus on security and performance"
+claude engineering-manager "Review PR #123: focus on security and performance"
 
 # The agent remembers previous reviews and can reference them
-claude --mcp-server engineering-manager "How does this PR compare to our previous authentication changes?"
+claude engineering-manager "How does this PR compare to our previous authentication changes?"
 ```
 
 ### Multi-Agent Collaboration
@@ -152,9 +152,9 @@ claude-agent engineering-manager --project /startup/mvp &
 claude-agent qa-manager --project /startup/mvp &
 
 # Coordinate feature development
-claude --mcp-server product-manager "Define MVP requirements for user onboarding"
-claude --mcp-server engineering-manager "Create technical design based on PM requirements"
-claude --mcp-server qa-manager "Plan testing strategy for onboarding flow"
+claude product-manager "Define MVP requirements for user onboarding"
+claude engineering-manager "Create technical design based on PM requirements"
+claude qa-manager "Plan testing strategy for onboarding flow"
 ```
 
 ## Memory and Context Management

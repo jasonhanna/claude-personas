@@ -233,7 +233,7 @@ persona:
 claude-agent security-engineer
 
 # Test with Claude Code
-claude --mcp-server security-engineer "Review this authentication code for security issues"
+claude security-engineer "Review this authentication code for security issues"
 ```
 
 ## Memory Evolution
@@ -295,10 +295,10 @@ yamllint personas/your-persona.yaml
 claude-agent your-role-name
 
 # 3. Test basic interaction
-claude --mcp-server your-role-name "Introduce yourself and your role"
+claude your-role-name "Introduce yourself and your role"
 
 # 4. Test domain expertise
-claude --mcp-server your-role-name "What should I focus on in your area?"
+claude your-role-name "What should I focus on in your area?"
 ```
 
 ### Common Issues

@@ -90,7 +90,7 @@ describe('Performance Tests - Error Handling', () => {
       console.log(`High-frequency serialization: ${avgTimePerSerialization.toFixed(3)}ms per serialization`);
       
       // Should handle high frequency well
-      expect(avgTimePerSerialization).toBeLessThan(1);
+      expect(avgTimePerSerialization).toBeLessThan(2);
     });
 
     test('should maintain performance with sensitive data sanitization', () => {

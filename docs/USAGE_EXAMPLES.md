@@ -9,10 +9,10 @@
 cd ~/projects/my-react-app
 
 # Get code review using the engineering manager agent
-claude --mcp-server engineering-manager "Review the UserProfile component for performance issues"
+claude engineering-manager "Review the UserProfile component for performance issues"
 
 # Get architecture advice  
-claude --mcp-server engineering-manager "Should we split this large component into smaller ones?"
+claude engineering-manager "Should we split this large component into smaller ones?"
 
 # The agent adapts to your React app codebase and remembers decisions across sessions
 ```
@@ -24,10 +24,10 @@ claude --mcp-server engineering-manager "Should we split this large component in
 cd ~/startup/mvp-app
 
 # Define user stories using the product manager agent
-claude --mcp-server product-manager "Create user stories for the social login feature"
+claude product-manager "Create user stories for the social login feature"
 
 # Prioritize features
-claude --mcp-server product-manager "Help prioritize these features based on user value: [list]"
+claude product-manager "Help prioritize these features based on user value: [list]"
 
 # The agent builds knowledge about your product over time
 ```
@@ -39,10 +39,10 @@ claude --mcp-server product-manager "Help prioritize these features based on use
 cd ~/work/ecommerce-platform
 
 # Test planning using the QA manager agent
-claude --mcp-server qa-manager "Create comprehensive test plan for the checkout process"
+claude qa-manager "Create comprehensive test plan for the checkout process"
 
 # Bug analysis
-claude --mcp-server qa-manager "Analyze this bug report and suggest test cases to prevent regression"
+claude qa-manager "Analyze this bug report and suggest test cases to prevent regression"
 ```
 
 ### Scenario 4: Multi-Project Consultant
@@ -53,15 +53,15 @@ claude --mcp-server qa-manager "Analyze this bug report and suggest test cases t
 
 # Project A: Python API
 cd ~/clients/api-project
-claude --mcp-server engineering-manager "Review database migrations"
+claude engineering-manager "Review database migrations"
 
 # Project B: React frontend  
 cd ~/clients/frontend-project
-claude --mcp-server engineering-manager "Optimize bundle size"
+claude engineering-manager "Optimize bundle size"
 
 # Project C: Mobile app
 cd ~/clients/mobile-app
-claude --mcp-server engineering-manager "Review native module integration"
+claude engineering-manager "Review native module integration"
 
 # The agent remembers patterns and can suggest solutions based on previous experience
 ```
@@ -75,13 +75,13 @@ claude --mcp-server engineering-manager "Review native module integration"
 cd ~/team/shared-repo
 
 # Developer 1 (Backend focus)
-claude --mcp-server engineering-manager "review the new API endpoints"
+claude engineering-manager "review the new API endpoints"
 
 # Developer 2 (Product focus)  
-claude --mcp-server product-manager "prioritize remaining user stories"
+claude product-manager "prioritize remaining user stories"
 
 # Developer 3 (QA focus)
-claude --mcp-server qa-manager "create integration test plan"
+claude qa-manager "create integration test plan"
 
 # All agents work on the same codebase but bring different perspectives
 # They can share insights through the shared knowledge base
@@ -93,25 +93,25 @@ claude --mcp-server qa-manager "create integration test plan"
 
 ```bash
 # Use any agent from any directory (after npm run setup-mcp)
-claude --mcp-server <role> "your request"
+claude <role> "your request"
 
 # Available roles
-claude --mcp-server engineering-manager "your technical question"
-claude --mcp-server product-manager "your product question"
-claude --mcp-server qa-manager "your testing question"
+claude engineering-manager "your technical question"
+claude product-manager "your product question"
+claude qa-manager "your testing question"
 ```
 
 ### Using with Claude Code
 
 ```bash
 # Basic task
-claude --mcp-server <role> "Your task description"
+claude <role> "Your task description"
 
 # With specific working directory
-claude --mcp-server <role> "Task" --working-dir /project/path
+claude <role> "Task" --working-dir /project/path
 
 # Complex multi-step task
-claude --mcp-server engineering-manager "
+claude engineering-manager "
 1. Review the authentication module
 2. Check for security vulnerabilities  
 3. Suggest performance improvements
@@ -123,26 +123,26 @@ claude --mcp-server engineering-manager "
 
 #### Engineering Manager
 ```bash
-claude --mcp-server engineering-manager "Review this PR for code quality"
-claude --mcp-server engineering-manager "Estimate effort for implementing GraphQL"
-claude --mcp-server engineering-manager "Analyze technical debt in the payments module"
-claude --mcp-server engineering-manager "Design architecture for real-time notifications"
+claude engineering-manager "Review this PR for code quality"
+claude engineering-manager "Estimate effort for implementing GraphQL"
+claude engineering-manager "Analyze technical debt in the payments module"
+claude engineering-manager "Design architecture for real-time notifications"
 ```
 
 #### Product Manager
 ```bash
-claude --mcp-server product-manager "Create acceptance criteria for user registration"
-claude --mcp-server product-manager "Analyze competitor features and suggest improvements"
-claude --mcp-server product-manager "Prioritize these bug fixes based on user impact"
-claude --mcp-server product-manager "Write PRD for the dashboard redesign"
+claude product-manager "Create acceptance criteria for user registration"
+claude product-manager "Analyze competitor features and suggest improvements"
+claude product-manager "Prioritize these bug fixes based on user impact"
+claude product-manager "Write PRD for the dashboard redesign"
 ```
 
 #### QA Manager
 ```bash
-claude --mcp-server qa-manager "Design test cases for the payment flow"
-claude --mcp-server qa-manager "Create automated testing strategy"
-claude --mcp-server qa-manager "Analyze this bug and suggest prevention measures"
-claude --mcp-server qa-manager "Plan performance testing for Black Friday traffic"
+claude qa-manager "Design test cases for the payment flow"
+claude qa-manager "Create automated testing strategy"
+claude qa-manager "Analyze this bug and suggest prevention measures"
+claude qa-manager "Plan performance testing for Black Friday traffic"
 ```
 
 ## Tips for Effective Usage
@@ -157,19 +157,19 @@ claude --mcp-server qa-manager "Plan performance testing for Black Friday traffi
 
 ```bash
 # Morning standup preparation
-claude --mcp-server product-manager "Summarize yesterday's progress and today's priorities"
+claude product-manager "Summarize yesterday's progress and today's priorities"
 
 # Code review process
-claude --mcp-server engineering-manager "Review PR #42 focusing on maintainability"
+claude engineering-manager "Review PR #42 focusing on maintainability"
 
 # Release planning
-claude --mcp-server qa-manager "What testing is needed before we can release v2.1?"
+claude qa-manager "What testing is needed before we can release v2.1?"
 
 # Architecture decisions
-claude --mcp-server engineering-manager "Should we migrate from REST to GraphQL?"
+claude engineering-manager "Should we migrate from REST to GraphQL?"
 
 # User feedback analysis
-claude --mcp-server product-manager "Analyze these user complaints and suggest feature improvements"
+claude product-manager "Analyze these user complaints and suggest feature improvements"
 ```
 
 The agents become your specialized consultants, each bringing expertise while learning about your specific projects and maintaining context across sessions!

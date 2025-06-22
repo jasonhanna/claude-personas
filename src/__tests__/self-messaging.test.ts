@@ -15,8 +15,13 @@ describe('Self-messaging', () => {
     }
   };
 
-  beforeEach(() => {
+  beforeEach(async () => {
     agent = new BaseAgentServer(testPersona, '/tmp/test-agent');
+    await agent.start();
+    
+    // Mock the message broker to avoid delivery failures in tests
+    const messageBroker = (agent as any).messageBroker;
+    jest.spyOn(messageBroker, 'sendMessage').mockResolvedValue(undefined);
   });
 
   afterEach(async () => {

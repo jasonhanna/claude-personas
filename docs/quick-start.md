@@ -20,33 +20,33 @@ npm run build
 
 ## Basic Usage
 
-### 1. Start an Agent
+### 1. Register Agents with Claude Code
 
 ```bash
-# Start engineering manager for current project
-claude --mcp-server engineering-manager "introduce yourself"
-
-# Or for specific project
-claude --mcp-server engineering-manager "introduce yourself" --project /path/to/my/app
+# One-time setup to register MCP servers
+npm run setup-mcp
 ```
 
 ### 2. Use with Claude Code
 
 ```bash
-# In another terminal
-claude --mcp-server engineering-manager "Review the authentication module"
+# The agents are available as MCP tools in Claude
+claude "Ask the engineering manager to review the authentication module"
+
+# Or directly use in Claude conversation:
+# "Please use the engineering manager to review this code"
 ```
 
 ### 3. Try Different Agents
 
 ```bash
 # Product management perspective
-claude --mcp-server product-manager "introduce yourself"
-claude --mcp-server product-manager "Create user stories for checkout flow"
+claude "Ask the product manager to introduce themselves"
+claude "Ask the product manager to create user stories for checkout flow"
 
 # Quality assurance perspective  
-claude --mcp-server qa-manager "introduce yourself"
-claude --mcp-server qa-manager "Design test cases for payment processing"
+claude "Ask the qa manager to introduce themselves"
+claude "Ask the qa manager to design test cases for payment processing"
 ```
 
 ## Demo Workflow
@@ -76,7 +76,7 @@ npm run setup-mcp
 npm run setup-mcp
 
 # Then use from anywhere
-claude --mcp-server engineering-manager "introduce yourself"
+claude "Ask the engineering manager to introduce themselves"
 ```
 
 That's it! Your AI development team is ready to help with any project.

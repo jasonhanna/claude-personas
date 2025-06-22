@@ -35,6 +35,8 @@ ${this.persona.initial_memories.map(m => `- ${m}`).join('\n')}
     try {
       await fs.access(this.memoryPath);
     } catch {
+      // Ensure directory exists before writing file
+      await fs.mkdir(path.dirname(this.memoryPath), { recursive: true });
       await fs.writeFile(this.memoryPath, memoryContent);
     }
   }
