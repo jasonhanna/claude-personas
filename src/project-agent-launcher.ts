@@ -56,28 +56,67 @@ class PortManager {
   private static readonly MAX_RETRIES = 10;
 
   static async allocatePort(projectHash: string, persona: string): Promise<number> {
-    await this.ensureRegistryExists();
-    
-    for (let attempt = 0; attempt < this.MAX_RETRIES; attempt++) {
-      const port = this.getRandomPort();
+    // Try management service first for atomic allocation
+    try {
+      const port = await this.allocatePortAtomic(projectHash, persona);
+      return port;
+    } catch (error) {
+      console.warn('Management service port allocation failed, falling back to local allocation:', error);
       
-      if (await this.isPortAvailable(port)) {
-        await this.registerPortAllocation(port, projectHash, persona);
-        return port;
+      // Fallback to local allocation
+      await this.ensureRegistryExists();
+      
+      for (let attempt = 0; attempt < this.MAX_RETRIES; attempt++) {
+        const port = this.getRandomPort();
+        
+        if (await this.isPortAvailable(port)) {
+          await this.registerPortAllocation(port, projectHash, persona);
+          return port;
+        }
       }
+      
+      throw new AgentSystemError(
+        'Port exhaustion: Unable to allocate available port after multiple attempts',
+        'PORT_EXHAUSTION',
+        'PortManager',
+        false
+      );
     }
-    
-    throw new AgentSystemError(
-      'Port exhaustion: Unable to allocate available port after multiple attempts',
-      'PORT_EXHAUSTION',
-      'PortManager',
-      false
-    );
+  }
+
+  private static async allocatePortAtomic(projectHash: string, persona: string): Promise<number> {
+    const response = await fetch('http://localhost:3000/api/ports/allocate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ projectHash, persona })
+    });
+
+    if (!response.ok) {
+      throw new Error(`Port allocation failed: ${response.statusText}`);
+    }
+
+    const { port } = await response.json();
+    return port;
   }
 
   static async releasePort(projectHash: string, persona: string): Promise<void> {
+    // Try to find the port first from local registry
     try {
       const allocations = await this.loadPortAllocations();
+      const allocation = allocations.find(
+        alloc => alloc.projectHash === projectHash && alloc.persona === persona
+      );
+      
+      if (allocation) {
+        // Try management service release first
+        try {
+          await this.releasePortAtomic(allocation.port);
+        } catch (error) {
+          console.warn('Management service port release failed, using local cleanup:', error);
+        }
+      }
+      
+      // Clean up local registry
       const updatedAllocations = allocations.filter(
         alloc => !(alloc.projectHash === projectHash && alloc.persona === persona)
       );
@@ -86,6 +125,16 @@ class PortManager {
       await this.cleanupStaleAllocations();
     } catch (error) {
       console.warn(`Failed to release port for ${projectHash}/${persona}:`, error);
+    }
+  }
+
+  private static async releasePortAtomic(port: number): Promise<void> {
+    const response = await fetch(`http://localhost:3000/api/ports/${port}`, {
+      method: 'DELETE'
+    });
+
+    if (!response.ok) {
+      throw new Error(`Port release failed: ${response.statusText}`);
     }
   }
 
@@ -470,19 +519,23 @@ export class ProjectAgentLauncher {
       }
     });
 
+    if (!agentProcess.pid) {
+      throw new Error('Failed to start agent process - no PID assigned');
+    }
+
     // Register the agent with management service
     await this.managementService.registerProjectAgent({
       projectHash,
       persona,
       port,
       workingDirectory: projectDir,
-      pid: agentProcess.pid!
+      pid: agentProcess.pid
     });
 
     return {
       persona,
       port,
-      pid: agentProcess.pid!,
+      pid: agentProcess.pid,
       process: agentProcess
     };
   }

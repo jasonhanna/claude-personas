@@ -437,7 +437,8 @@ export class ProjectRegistry {
   private async loadProjects(): Promise<ProjectInfo[]> {
     try {
       const data = await fs.readFile(this.projectsFile, 'utf8');
-      return JSON.parse(data);
+      const parsed = JSON.parse(data);
+      return Array.isArray(parsed) ? parsed : [];
     } catch {
       return [];
     }
@@ -450,7 +451,8 @@ export class ProjectRegistry {
   private async loadSessions(): Promise<ProjectSession[]> {
     try {
       const data = await fs.readFile(this.sessionsFile, 'utf8');
-      return JSON.parse(data);
+      const parsed = JSON.parse(data);
+      return Array.isArray(parsed) ? parsed : [];
     } catch {
       return [];
     }

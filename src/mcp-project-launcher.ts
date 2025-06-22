@@ -6,6 +6,7 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import { ProjectRegistry } from './project-registry.js';
 import { formatUserError, logUserFriendlyError } from './user-friendly-errors.js';
+import { CircuitBreaker, CircuitBreakerFactory, CircuitBreakerError } from './circuit-breaker.js';
 
 interface MCPRequest {
   jsonrpc: string;
@@ -36,12 +37,16 @@ export class MCPProjectLauncher {
   private managementServiceAvailable: boolean = false;
   private retryAttempts: number = 0;
   private maxRetries: number = 3;
+  private managementServiceCircuitBreaker: CircuitBreaker;
 
   constructor(role: string, projectDir: string) {
     this.role = role;
     this.projectDir = path.resolve(projectDir);
     this.projectHash = this.generateProjectHash(this.projectDir);
     this.registry = new ProjectRegistry();
+    
+    // Initialize circuit breaker for management service
+    this.managementServiceCircuitBreaker = CircuitBreakerFactory.createFastFail('management-service');
   }
 
   async launch(): Promise<void> {
@@ -76,38 +81,57 @@ export class MCPProjectLauncher {
       // Start STDIO server
       await this.startStdioServer();
       
-    } catch (error: any) {
-      logUserFriendlyError(error, `launching ${this.role} agent`);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const agentError = error instanceof Error ? error : new Error(errorMessage);
+      logUserFriendlyError(agentError, `launching ${this.role} agent`);
       
       // Try standalone mode as fallback
       if (this.managementServiceAvailable) {
         console.error(`[MCP] Attempting standalone mode as fallback...`);
         try {
           await this.launchStandaloneMode();
-        } catch (fallbackError: any) {
-          const combinedError = new Error(`Cannot launch ${this.role} agent: ${error.message}. Standalone fallback also failed: ${fallbackError.message}`);
+        } catch (fallbackError: unknown) {
+          const fallbackMessage = fallbackError instanceof Error ? fallbackError.message : String(fallbackError);
+          const combinedError = new Error(`Cannot launch ${this.role} agent: ${errorMessage}. Standalone fallback also failed: ${fallbackMessage}`);
           logUserFriendlyError(combinedError, 'agent startup');
           throw combinedError;
         }
       } else {
-        throw error;
+        throw agentError;
       }
     }
   }
 
   private async checkManagementService(): Promise<boolean> {
     try {
-      const response = await fetch('http://localhost:3000/health', {
-        method: 'GET',
-        signal: AbortSignal.timeout(5000) // 5 second timeout
+      return await this.managementServiceCircuitBreaker.execute(async () => {
+        const response = await fetch('http://localhost:3000/health', {
+          method: 'GET',
+          signal: AbortSignal.timeout(5000) // 5 second timeout
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Management service returned ${response.status}: ${response.statusText}`);
+        }
+        
+        return true;
       });
-      return response.ok;
-    } catch (error: any) {
+    } catch (error: unknown) {
+      if (error instanceof CircuitBreakerError) {
+        console.error(`[MCP] Management service circuit breaker: ${error.message}`);
+        return false;
+      }
+      
       // Use friendly error message for management service issues
-      if (error.name === 'AbortError' || error.message.includes('timeout')) {
+      const errorName = error instanceof Error ? error.name : '';
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      
+      if (errorName === 'AbortError' || errorMessage.includes('timeout')) {
         console.error(formatUserError('Management service health check timed out', 'service check'));
       } else {
-        console.error(formatUserError(error, 'management service connectivity'));
+        const agentError = error instanceof Error ? error : new Error(errorMessage);
+        console.error(formatUserError(agentError, 'management service connectivity'));
       }
       return false;
     }
@@ -152,8 +176,9 @@ export class MCPProjectLauncher {
       // Replace current process
       console.error(`[MCP] Switched to standalone mode for ${this.role}`);
       
-    } catch (error: any) {
-      const standaloneError = new Error(`STANDALONE_FALLBACK_FAILED: ${error.message}`);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const standaloneError = new Error(`STANDALONE_FALLBACK_FAILED: ${errorMessage}`);
       logUserFriendlyError(standaloneError, 'standalone mode fallback');
       throw standaloneError;
     }
@@ -219,14 +244,15 @@ export class MCPProjectLauncher {
       }
       
       return await response.json();
-    } catch (error: any) {
-      console.error(`[MCP] Failed to forward request: ${error.message}`);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error(`[MCP] Failed to forward request: ${errorMessage}`);
       return {
         jsonrpc: '2.0',
         id: request.id,
         error: {
           code: -32603,
-          message: `Internal error: ${error.message}`
+          message: `Internal error: ${errorMessage}`
         }
       };
     }
@@ -332,11 +358,15 @@ export class MCPProjectLauncher {
         workingDirectory: this.projectDir
       });
       
+      if (!this.agentPort || !this.projectAgent?.pid) {
+        throw new Error('Cannot register agent: agent port or process PID not available');
+      }
+      
       await this.registry.registerAgent({
         projectHash: this.projectHash,
         persona: this.role,
-        port: this.agentPort!,
-        pid: this.projectAgent!.pid!
+        port: this.agentPort,
+        pid: this.projectAgent.pid
       });
       
       console.error(`[MCP] Registered ${this.role} agent with project registry`);
@@ -352,30 +382,69 @@ export class MCPProjectLauncher {
     for (let attempt = 0; attempt <= this.maxRetries; attempt++) {
       try {
         return await operation();
-      } catch (error: any) {
-        lastError = error;
+      } catch (error: unknown) {
+        lastError = error instanceof Error ? error : new Error(String(error));
         
         if (attempt === this.maxRetries) {
-          console.error(`[MCP] ${operationName} failed after ${this.maxRetries + 1} attempts: ${error.message}`);
+          console.error(`[MCP] ${operationName} failed after ${this.maxRetries + 1} attempts: ${lastError.message}`);
           break;
         }
         
         const delay = Math.min(1000 * Math.pow(2, attempt), 10000); // Exponential backoff, max 10s
-        console.error(`[MCP] ${operationName} failed (attempt ${attempt + 1}/${this.maxRetries + 1}), retrying in ${delay}ms: ${error.message}`);
+        console.error(`[MCP] ${operationName} failed (attempt ${attempt + 1}/${this.maxRetries + 1}), retrying in ${delay}ms: ${lastError.message}`);
         await new Promise(resolve => setTimeout(resolve, delay));
       }
     }
     
     // If we're here, all retries failed
     if (!this.managementServiceAvailable) {
-      console.error(`[MCP] ${operationName} failed - management service unavailable, continuing in degraded mode`);
-      return {} as T; // Return empty object to continue operation
+      console.error(`[MCP] ${operationName} failed - management service unavailable, degraded mode not supported for this operation`);
+      throw new Error(`${operationName} requires management service but it is unavailable. Last error: ${lastError.message}`);
     }
     
     throw lastError;
   }
 
   private async allocatePort(): Promise<number> {
+    if (this.managementServiceAvailable) {
+      // Use atomic port allocation through management service
+      return await this.allocatePortAtomic();
+    } else {
+      // Fallback to local port allocation (less safe but still functional)
+      return await this.allocatePortLocal();
+    }
+  }
+
+  private async allocatePortAtomic(): Promise<number> {
+    try {
+      return await this.managementServiceCircuitBreaker.execute(async () => {
+        const response = await fetch('http://localhost:3000/api/ports/allocate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            projectHash: this.projectHash,
+            persona: this.role
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error(`Port allocation failed: ${response.statusText}`);
+        }
+
+        const { port } = await response.json();
+        return port;
+      });
+    } catch (error: unknown) {
+      if (error instanceof CircuitBreakerError) {
+        throw new Error(`Management service port allocation unavailable: ${error.message}`);
+      }
+      
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new Error(`Atomic port allocation failed: ${errorMessage}`);
+    }
+  }
+
+  private async allocatePortLocal(): Promise<number> {
     const PORT_RANGE = { start: 30000, end: 40000 };
     
     for (let attempt = 0; attempt < 10; attempt++) {
@@ -428,11 +497,39 @@ export class MCPProjectLauncher {
       this.projectAgent.kill('SIGTERM');
       this.projectAgent = null;
     }
+    
+    // Release allocated port
+    if (this.agentPort && this.managementServiceAvailable) {
+      await this.releasePort(this.agentPort);
+    }
+  }
+
+  private async releasePort(port: number): Promise<void> {
+    try {
+      await this.managementServiceCircuitBreaker.execute(async () => {
+        const response = await fetch(`http://localhost:3000/api/ports/${port}`, {
+          method: 'DELETE'
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Failed to release port ${port}: ${response.statusText}`);
+        }
+      });
+      
+      console.error(`[MCP] Released port ${port}`);
+    } catch (error: unknown) {
+      if (error instanceof CircuitBreakerError) {
+        console.error(`[MCP] Cannot release port ${port} - management service circuit breaker open`);
+      } else {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        console.error(`[MCP] Error releasing port ${port}: ${errorMessage}`);
+      }
+    }
   }
 }
 
-// CLI entry point
-if (import.meta.url === `file://${process.argv[1]}`) {
+// CLI entry point - check if this file is being run directly
+if (process.argv[1] && process.argv[1].endsWith('mcp-project-launcher.js')) {
   const role = process.argv[2];
   const projectDir = process.argv[3] || process.cwd();
   
