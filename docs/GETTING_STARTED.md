@@ -2,13 +2,14 @@
 
 ⚠️ **LOCALHOST DEVELOPMENT TOOL ONLY** - Not for production use.
 
-Welcome to the Multi-Agent MCP Framework! This guide will help you set up and start using AI agents in your local development workflow.
+Welcome to the Multi-Agent MCP Framework! This guide will help you set up and start using AI persona agents in your local development workflow using Claude Code's revolutionary headless mode.
 
 ## Table of Contents
 
 - [What You'll Learn](#what-youll-learn)
 - [Prerequisites](#prerequisites)
 - [Installation](#installation)
+- [Execution Modes](#execution-modes)
 - [First Steps](#first-steps)
 - [Your First Agent Interaction](#your-first-agent-interaction)
 - [Understanding Agent Personas](#understanding-agent-personas)
@@ -21,11 +22,11 @@ Welcome to the Multi-Agent MCP Framework! This guide will help you set up and st
 By the end of this guide, you'll be able to:
 
 - ✅ Install and configure the multi-agent framework
-- ✅ Start the persona management service
-- ✅ Interact with AI agents from any project
-- ✅ Understand how agents maintain memory and context
-- ✅ Use multiple agents collaboratively
-- ✅ Access system health and monitoring
+- ✅ Choose between headless and PTY execution modes
+- ✅ Initialize personas for any project
+- ✅ Interact with AI agents that analyze your actual code
+- ✅ Understand how personas maintain specialized perspectives
+- ✅ Use multiple personas collaboratively
 
 ## Prerequisites
 
@@ -39,10 +40,15 @@ npm --version     # Required: 8.0.0 or higher
 
 ### Claude Code Setup
 
-1. **Install Claude Code**: Download from [Claude Desktop](https://claude.ai/code)
+1. **Install Claude Code CLI**: Download from [Claude Desktop](https://claude.ai/code)
 2. **Verify Installation**: 
    ```bash
    claude --version
+   ```
+3. **Test Headless Mode**: 
+   ```bash
+   claude -p "What is 2+2?"
+   # Should output: 4
    ```
 
 ### System Requirements
@@ -51,6 +57,25 @@ npm --version     # Required: 8.0.0 or higher
 - **Memory**: At least 4GB RAM available
 - **Disk**: 1GB free space for framework and agent data
 - **Network**: Internet connection for initial setup
+
+## Execution Modes
+
+The framework supports two execution modes for running persona instances:
+
+### Headless Mode (Recommended)
+- **Simple & Reliable**: Uses Claude Code's native `-p` flag for non-interactive execution
+- **Stateless**: Fresh persona context loaded per interaction
+- **No Dependencies**: Works with just Claude Code CLI - no additional packages
+- **Fast**: 2-3 second response times
+- **Zero Complexity**: No session management or output parsing required
+
+### PTY Mode (Advanced)
+- **Stateful Sessions**: Maintains persistent conversations with session memory
+- **Complex**: Requires pseudo-terminal automation and session management
+- **Dependencies**: Requires `node-pty` package (native compilation)
+- **Future Feature**: Full implementation documented but not yet complete
+
+**Recommendation**: Start with headless mode. It provides 100% of the functionality with 10% of the complexity.
 
 ## Installation
 
@@ -63,39 +88,40 @@ cd multi-agent-mcp-framework
 
 # Install dependencies
 npm install
-
-# Build the framework
-npm run build
 ```
 
-### Step 2: Configure Claude Code and Start Service
+### Step 2: Initialize Global Personas
 
-The framework automatically configures Claude Code when you run `npm run build`. Then start the persona management service:
+Create the global persona definitions that will be shared across all projects:
 
 ```bash
-# Start the central management service
-# Note: The service automatically creates the ~/.claude-agents/ directory structure on first startup
-npm run persona-service:prod
+# Initialize global personas in ~/.claude-agents/personas/
+npm run init-personas
 
-# In another terminal, verify it's running
-curl http://localhost:3000/health
+# Verify personas were created
+ls ~/.claude-agents/personas/
+# Should show: engineering-manager.md  product-manager.md  qa-manager.md
 ```
 
-You should see:
-```json
-{
-  "status": "healthy",
-  "timestamp": "2025-06-22T20:51:47.540Z",
-  "uptime": 15
-}
-```
+### Step 3: Initialize Personas for Your Project
 
-### Step 3: Restart Claude Code
-
-Restart Claude Code to pick up the new MCP servers:
+For each project where you want to use personas, run the initialization:
 
 ```bash
-# Restart Claude Code
+# Headless mode (recommended)
+npm run init-project-personas -- --project /path/to/your/project
+
+# PTY mode (advanced)
+npm run init-project-personas -- --project /path/to/your/project --mode pty
+
+# Example with specific personas only
+npm run init-project-personas -- --project ../my-app --personas engineering-manager,qa-manager
+```
+
+This creates:
+- `.claude-agents/` directory in your project
+- Individual persona instance directories with `CLAUDE.md` context files
+- `.mcp.json` configuration for Claude Code
 pkill -f "Claude Desktop"
 # Then reopen Claude Desktop
 ```

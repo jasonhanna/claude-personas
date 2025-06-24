@@ -5,7 +5,7 @@ import { createHash } from 'crypto';
 export interface ServiceEndpoint {
   id: string;
   name: string;
-  type: 'global' | 'project' | 'management';
+  type: 'global' | 'project' | 'management' | 'global-persona-server';
   host: string;
   port: number;
   status: 'healthy' | 'unhealthy' | 'starting' | 'stopping';
@@ -45,10 +45,16 @@ export class ServiceDiscovery extends EventEmitter {
   private serviceTimeout = 90000; // 90 seconds
   private cleanupInterval: NodeJS.Timeout | null = null;
   private logger = createLogger('ServiceDiscovery');
+  private authService?: any; // Will be set via setAuthService
 
   constructor() {
     super();
     this.startCleanupProcess();
+  }
+
+  // Set auth service for health checks
+  setAuthService(authService: any): void {
+    this.authService = authService;
   }
 
   // Service registration
@@ -154,12 +160,34 @@ export class ServiceDiscovery extends EventEmitter {
         };
       }
 
+      // Prepare headers with authentication for services that require it
+      const headers: HeadersInit = {};
+      
+      // Add authentication for global persona servers
+      if (service.type === 'global-persona-server' && this.authService) {
+        try {
+          // Get a development token for the health monitor
+          const devTokens = this.authService.getDevelopmentTokens();
+          // Use the first available token (could be improved to use a specific health monitor token)
+          const token = Object.values(devTokens)[0];
+          if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+            console.log(`[ServiceDiscovery] Using auth token for ${service.name} health check`);
+          } else {
+            console.warn(`[ServiceDiscovery] No auth tokens available for ${service.name} health check`);
+          }
+        } catch (error) {
+          console.warn(`[ServiceDiscovery] Could not get auth token for health check: ${error}`);
+        }
+      }
+
       // Perform HTTP health check with timeout
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
       
       const response = await fetch(service.healthEndpoint, {
         method: 'GET',
+        headers,
         signal: controller.signal
       });
       
@@ -279,8 +307,14 @@ export class ServiceDiscovery extends EventEmitter {
     const healthCheck = setInterval(async () => {
       const result = await this.performHealthCheck(service);
       
-      // Update service status
+      // Update service status and lastSeen
       const updatedStatus = result.status;
+      
+      // Update lastSeen timestamp on successful health check
+      if (updatedStatus === 'healthy') {
+        service.metadata.lastSeen = Date.now();
+      }
+      
       if (service.status !== updatedStatus) {
         const oldStatus = service.status;
         service.status = updatedStatus;

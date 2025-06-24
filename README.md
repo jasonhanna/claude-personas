@@ -2,17 +2,17 @@
 
 ⚠️ **DEVELOPMENT TOOL ONLY** - Not for production use
 
-A sophisticated framework for deploying Claude Code agents with distinct personas as Model Context Protocol (MCP) servers. This system enables multiple AI agents with specialized roles to collaborate on software development projects through an advanced split architecture designed for local development environments.
+A sophisticated framework for deploying Claude Code agents with distinct personas as Model Context Protocol (MCP) servers. This system enables multiple AI agents with specialized roles to collaborate on software development projects through an advanced split architecture with dual execution modes.
 
 ## 🌟 Key Features
 
 - **🎭 Multiple Agent Personas**: Pre-configured engineering manager, product manager, and QA manager personas
-- **🏗️ Split Architecture**: Separation of global persona management from project-specific operations  
-- **🔐 Development Security**: Basic JWT authentication and API keys for localhost use
-- **📊 Health Monitoring**: Real-time metrics and service discovery (development patterns)
-- **🧠 Hierarchical Context**: Smart context building with project-specific overlays
-- **💾 Memory Synchronization**: Optimistic locking and conflict resolution for agent memories
-- **🛠️ CLI Management**: Command-line interface for local system administration
+- **🏗️ Split Architecture**: Global persona management + per-project persona instances
+- **⚡ Dual Execution Modes**: Choose between simple headless mode or advanced PTY sessions
+- **🔥 Claude Code Headless Opperation**: Uses `claude -p` flag for stateless execution (default)
+- **🧠 Intelligent Context Injection**: Persona context dynamically loaded per interaction
+- **💾 Project-Specific Memory**: Persistent memory storage within project contexts
+- **🛠️ CLI Management**: Command-line interface for project initialization and management
 - **🔄 Multi-Instance Support**: Multiple Claude Code instances can share project agents
 
 ## ⚠️ Important Limitations
@@ -29,64 +29,100 @@ A sophisticated framework for deploying Claude Code agents with distinct persona
 
 ### Prerequisites
 - Node.js 18+ and npm
-- Claude Code (Claude Desktop app)
+- Claude Code CLI with headless mode support (`claude -p`)
 - Unix-like environment (macOS, Linux, WSL)
 
 ```bash
 # 1. Clone and install
 git clone https://github.com/your-org/multi-agent-mcp-framework.git
 cd multi-agent-mcp-framework
-npm install && npm run build
+npm install
 
-# 2. Start the persona management service (required)
-npm run persona-service:prod
+# 2. Initialize global personas
+npm run init-personas
 
-# 3. Get admin API key from service logs and check status
-export AGENT_API_KEY="agent_YOUR_ADMIN_KEY"
-claude-agents --api-key $AGENT_API_KEY system status
+# 3. Initialize personas for your project (headless mode - recommended)
+npm run init-project-personas -- --project /path/to/your/project
 
-# 4. Claude Code is automatically configured - just restart it
-# Then use agents from any project:
-claude "Ask the engineering manager to review this architecture"
-claude "Ask the product manager to prioritize these features"
-claude "Ask the qa manager to design test strategy"
+# Alternative: Initialize with PTY mode (advanced, requires node-pty)
+npm run init-project-personas -- --project /path/to/your/project --mode pty
+
+# 4. Start Claude Code in your project and interact with personas
+cd /path/to/your/project
+claude
+# Then ask: "Ask the engineering manager about our architecture"
 ```
 
+## 🎯 Execution Modes
+
+### Headless Mode (Default)
+- **Simple & Reliable**: Uses Claude Code's native `-p` flag
+- **Stateless**: Fresh persona context loaded per interaction
+- **No Dependencies**: Zero additional packages required
+- **Fast Setup**: ~2-3 second response times
+
+### PTY Mode (Future Feature)
+- **Stateful Sessions**: Persistent conversations with memory
+- **Complex**: Requires PTY automation and session management
+- **Dependencies**: Requires `node-pty` package
+
+```
 ## 🏗️ Architecture Overview
 
 ### Split Architecture Design
 
-The system uses an advanced two-tier architecture that separates concerns:
+The system uses a streamlined split architecture that separates global persona management from project-specific instances:
 
-1. **🌐 Persona Management Service** (Port 3000)
-   - Central control plane for all agents
-   - Service discovery and health monitoring
-   - Authentication and authorization
-   - Memory and context management
-   - RESTful API and CLI interface
+1. **📁 Global Personas** (`~/.claude-agents/personas/`)
+   - Centralized persona definitions in markdown format
+   - Easily editable personality and expertise descriptions
+   - Shared across all projects for consistency
 
-2. **🎭 Agent Personas** (Dynamic allocation)
-   - Specialized AI agents with distinct roles
-   - Project-specific instances with correct working directory
-   - Shared knowledge and memory synchronization
-   - Automatic lifecycle management
+2. **🎭 Per-Project Persona Instances** (`.claude-agents/` in each project)
+   - MCP servers that spawn Claude Code instances
+   - Run from project root with full file system access
+   - Support both headless and PTY execution modes
+   - Project-specific memory and context storage
+
+### Execution Flow
+
+```
+User in Claude Code Session
+    ↓ "Ask the engineering manager..."
+MCP Call: askPersona
+    ↓
+Hybrid Persona MCP Server
+    ↓ Load persona context from CLAUDE.md
+Headless Mode: spawn claude -p with injected context
+    ↓ Run from project root directory
+Claude Code Process (persona)
+    ↓ Analyze project files + respond as persona
+Response back to user
+```
 
 ## 🎯 What Makes This Special
 
-Each agent brings **specialized domain expertise** and maintains memory across interactions:
+Each persona provides **specialized domain expertise** with full project context:
 
 ```bash
 # Alex (Engineering Manager) - Technical architecture and code quality
 claude "Ask the engineering manager to review this API design for scalability"
+# → Analyzes actual code files, applies engineering best practices
 
 # Sarah (Product Manager) - Business requirements and feature prioritization  
 claude "Ask the product manager to help prioritize these user stories"
+# → Reviews project requirements, considers business impact
 
 # Marcus (QA Manager) - Testing strategy and quality assurance
 claude "Ask the qa manager to design comprehensive test plan for checkout flow"
+# → Examines code structure, identifies testing gaps
 ```
 
-**Each agent uses the `get_agent_perspective` tool** to provide specialized insights while maintaining their accumulated knowledge and communication style.
+**Key Advantages:**
+- 🎭 **Consistent Personas**: Each agent maintains their specialized perspective
+- 📁 **Full File Access**: Personas analyze actual project files from root directory
+- 🧠 **Project-Specific Memory**: Conversations stored within project context
+- ⚡ **Zero Dependencies**: Headless mode works with just Claude Code CLI
 
 ## 📚 Documentation
 
@@ -108,27 +144,32 @@ claude "Ask the qa manager to design comprehensive test plan for checkout flow"
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│                     Claude Code                         │
-│                (Project: your-project)                  │
+│                   Claude Code                           │
+│                (Project Session)                        │
 └─────────────────────────────────────────────────────────┘
-                     │                │
-                     │ STDIO          │ STDIO
-                     ▼                ▼
-        ┌─────────────────────┐  ┌────────────────────┐
-        │ Project Agent:      │  │ Project Agent:     │
-        │ Engineering Manager │  │ Product Manager    │
-        │ Port: 30001         │  │ Port: 30002        │
-        └─────────────────────┘  └────────────────────┘
-                   │                         │
-                   │ HTTP                    │ HTTP
-                   ▼                         ▼
-        ┌─────────────────────────────────────────────────┐
-        │      Persona Management Service            │
-        │             Port: 3000                     │
-        │   • Service Discovery & Health Monitoring  │
-        │   • Authentication & Authorization         │
-        │   • Memory & Context Management            │
-        └─────────────────────────────────────────────────┘
+         │                │                │
+         │ STDIO          │ STDIO          │ STDIO  
+         ▼                ▼                ▼
+┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐
+│ MCP Server:     │ │ MCP Server:     │ │ MCP Server:     │
+│ Engineering     │ │ Product         │ │ QA Manager      │
+│ Manager         │ │ Manager         │ │                 │
+│                 │ │                 │ │                 │
+│ • CLAUDE.md     │ │ • CLAUDE.md     │ │ • CLAUDE.md     │
+│ • Tool Config   │ │ • Tool Config   │ │ • Tool Config   │
+│ • File Logging  │ │ • File Logging  │ │ • File Logging  │
+└─────────────────┘ └─────────────────┘ └─────────────────┘
+         │                │                │
+         │ claude -p      │ claude -p      │ claude -p
+         │ (headless)     │ (headless)     │ (headless)
+         ▼                ▼                ▼
+┌─────────────────────────────────────────────────────────┐
+│               Project File System                       │
+│         • Full read/write access                        │
+│         • Configurable tool permissions                 │
+│         • Project-specific context                      │
+│         • Persona memory & logging                      │
+└─────────────────────────────────────────────────────────┘
 ```
 
 ## 🎭 Agent Personas
@@ -153,149 +194,113 @@ claude "Ask the qa manager to design comprehensive test plan for checkout flow"
    - Ensures performance and security standards
    - Tools: test_generator, bug_tracker, performance_tester
 
-## 🔒 Security & Authentication
+## 🔒 Security & Permissions
 
-⚠️ **Development-Only Security - NOT for production use**
+### Tool Access Control
 
-The system implements basic authentication for localhost development:
+Each persona runs with configurable tool permissions for security and role separation:
 
-### API Authentication
-
-All API endpoints (except `/health`) require authentication via:
-
-1. **API Keys** (recommended for CLI/automation):
-```bash
-curl -H "X-API-Key: agent_YOUR_API_KEY" http://localhost:3000/api/personas
+#### Current Default Permissions
+```javascript
+// All personas currently receive the same tools:
+allowedTools: ['Write', 'Edit', 'Read', 'Bash', 'LS', 'Glob', 'Grep', 'MultiEdit']
 ```
 
-2. **JWT Tokens** (for session-based auth):
+#### Planned Role-Based Permissions (GitHub Issue #16)
+- **Engineering Manager**: Full development tools (Write, Edit, Read, Bash, Git, Docker)
+- **Product Manager**: Read-only analysis + web research (Read, LS, WebFetch, WebSearch)  
+- **QA Manager**: Testing and validation tools (Write, Edit, Read, Bash, test runners)
+
+### File System Access
+
+MCP servers run from the project directory with:
+- ✅ **Full project file access** - Can read, write, and execute within project boundaries
+- ✅ **Tool-based permissions** - Only allowed tools can be executed
+- ✅ **Process isolation** - Each persona runs in separate Node.js processes
+- ✅ **Log file separation** - Individual log files per persona
+
+### Security Considerations
+
+⚠️ **Development-Only Configuration - NOT for production use**
+
+**Current Security Model:**
+- No network authentication (STDIO-based MCP communication)
+- File system access limited to project directory
+- Tool permissions controlled via Claude Code `--allowedTools` flag
+- Persona contexts stored in project-local `.claude-agents/` directory
+
+**Best Practices:**
+- Use in trusted development environments only
+- Review tool permissions before granting broad access
+- Monitor persona log files for unexpected behavior
+- Keep persona contexts (CLAUDE.md) in version control
+
+## 🛠️ Available Personas
+
+| Persona | Name | Role | Tools & Capabilities |
+|---------|------|------|----------------------|
+| `engineering-manager` | Alex Chen | Engineering Manager | Full development stack, architecture analysis, code review |
+| `product-manager` | Sarah Martinez | Product Manager | Requirements analysis, user stories, roadmap planning |
+| `qa-manager` | Marcus Johnson | QA Manager | Testing strategy, quality assurance, bug tracking |
+
+## 📋 MCP Tools Available
+
+Each persona exposes a single MCP tool:
+
+- `askPersona` - Ask the persona a question with optional context
+
+**Usage Example:**
 ```bash
-curl -H "Authorization: Bearer YOUR_JWT_TOKEN" http://localhost:3000/api/personas
+# In Claude Code session
+"Ask the engineering manager to review this API design for scalability"
+"Ask the product manager to help prioritize these user stories"  
+"Ask the qa manager to design a test plan for the checkout flow"
 ```
 
-### Default Credentials
+## 🛠️ Setup & Management
 
-⚠️ **SECURITY WARNING**: On first startup, the system generates API keys and **prints them to the console/logs**. This is acceptable only for localhost development:
-
-- **Admin API Key**: Full system access (visible in console output)
-- **Service API Key**: Inter-service communication
-
-**Never use this pattern in production environments!**
-
-### Generating Credentials
+### Initialize Personas in a Project
 
 ```bash
-# Generate a new API key
-node dist/cli-tool.js --api-key $ADMIN_KEY auth apikey \
-  --user "my-service" --role "service" \
-  --permissions "personas:read,agents:manage"
+# Set up personas for your project
+npm run init-project-personas -- --project /path/to/your/project
 
-# Generate a JWT token
-node dist/cli-tool.js --api-key $ADMIN_KEY auth token \
-  --user "developer" --role "user" \
-  --permissions "dashboard:read,personas:read"
+# This creates:
+# - .claude-agents/ directory structure
+# - Individual persona contexts (CLAUDE.md files)
+# - MCP configuration (.mcp.json)
+# - Log directories
 ```
 
-## 🛠️ Available Agents
-
-| Agent | Name | Role | Specialization |
-|-------|------|------|----------------|
-| `engineering-manager` | Alex Chen | Engineering Manager | Architecture, code quality, technical leadership |
-| `product-manager` | Sarah Martinez | Product Manager | Requirements, prioritization, user stories |
-| `qa-manager` | Marcus Johnson | QA Manager | Testing strategy, quality assurance, bug analysis |
-
-## 📋 Available Tools
-
-Each agent provides these MCP tools:
-
-- `get_agent_perspective` - Get specialized insights and recommendations
-- `send_message` - Communicate with other agents
-- `read_shared_knowledge` / `write_shared_knowledge` - Access shared context
-- `update_memory` - Add to agent's persistent memory
-
-## 🛠️ CLI Management
-
-The system provides a comprehensive command-line interface for administration:
-
-### Basic Commands
+### Monitor Persona Activity
 
 ```bash
-# Check system status
-node dist/cli-tool.js --api-key $AGENT_API_KEY system status
+# Watch persona logs in real-time
+npm run monitor-personas -- --project /path/to/your/project --tail engineering-manager
 
-# List all personas
-node dist/cli-tool.js --api-key $AGENT_API_KEY persona list
+# Check persona status
+npm run status
 
-# View health dashboard
-node dist/cli-tool.js --api-key $AGENT_API_KEY system health
-
-# List running services
-node dist/cli-tool.js --api-key $AGENT_API_KEY service list
-```
-
-### Authentication Management
-
-```bash
-# Generate API key
-node dist/cli-tool.js --api-key $ADMIN_KEY auth apikey \
-  --user "my-service" --role "service" \
-  --permissions "personas:read,agents:manage"
-
-# Generate JWT token
-node dist/cli-tool.js --api-key $ADMIN_KEY auth token \
-  --user "developer" --role "user" \
-  --permissions "dashboard:read"
-```
-
-## 📊 Health Monitoring
-
-The system includes comprehensive health monitoring:
-
-### Metrics Tracked
-- Service availability and response times
-- Memory usage and system resources
-- API request rates and errors
-- Agent lifecycle events
-
-### Alert Rules
-- High unhealthy services count
-- Excessive response times
-- Memory usage thresholds
-- System-wide health status
-
-### Accessing Health Data
-
-```bash
-# View real-time dashboard
-node dist/cli-tool.js --api-key $AGENT_API_KEY system health
-
-# Check specific service
-curl -H "X-API-Key: $AGENT_API_KEY" \
-  http://localhost:3000/api/services
-
-# View error history
-curl -H "X-API-Key: $AGENT_API_KEY" \
-  http://localhost:3000/api/health/errors
+# Reset persona memory (if needed)
+npm run reset-personas
 ```
 
 ## 🧪 Testing
 
-The framework includes comprehensive tests:
+The framework includes comprehensive tests for MCP functionality:
 
 ```bash
 # Run all tests
 npm test
 
-# Run specific test suites
-npm test -- --testNamePattern="Context Manager"
-npm test -- --testNamePattern="Memory Synchronization"
-npm test -- --testNamePattern="Service Discovery"
-
 # Run with coverage
 npm run test:coverage
 
-# Run integration tests
-npm run test:integration
+# Run specific test suites
+npm test -- --testNamePattern="MCP Server"
+npm test -- --testNamePattern="Persona Management"
+npm test -- --testNamePattern="Context Manager"
+```
 ```
 
 For detailed testing instructions, see [TESTING_GUIDE.md](./docs/TESTING_GUIDE.md).
@@ -304,51 +309,66 @@ For detailed testing instructions, see [TESTING_GUIDE.md](./docs/TESTING_GUIDE.m
 
 ### Common Issues
 
-1. **Port already in use**
+1. **MCP servers not starting**
    ```bash
-   # Find process using port 3000
-   lsof -i :3000
-   # Kill the process or use a different port
+   # Check MCP configuration
+   cat .mcp.json
+   # Verify persona directories exist
+   ls .claude-agents/
+   # Check logs for errors
+   tail -f .claude-agents/*/logs/mcp-server.log
    ```
 
-2. **API authentication failures**
-   - Check API key format: `agent_[64-char-hex]`
-   - Verify key permissions match endpoint requirements
-   - Ensure service is running and accessible
+2. **Persona not responding**
+   - Verify persona MCP server is running via Claude Code
+   - Check persona log files in `.claude-agents/{persona}/logs/`
+   - Ensure CLAUDE.md context file exists
+   - Verify tool permissions are configured correctly
 
-3. **Agent not responding**
-   - Check service health: `/api/health`
-   - Verify Claude Code configuration
-   - Review logs in `~/.claude-agents/logs/`
+3. **Tool permission errors**
+   - Claude exits with "unknown option" errors
+   - Check `allowedTools` configuration in persona scripts
+   - Verify Claude Code version supports the specified tools
+   - Review tool permission documentation
 
-4. **Memory conflicts**
-   - System uses optimistic locking
-   - Conflicts are automatically resolved
-   - Check conflict logs for patterns
+4. **Recursive MCP server spawning**
+   - Multiple instances of same persona starting
+   - Check for circular MCP configuration references
+   - Verify override configuration is working properly
 
 For more help, see [Troubleshooting Guide](./docs/troubleshooting.md).
 
 ## 🔧 Configuration
 
-System configuration is stored in `~/.claude-agents/config.json`:
+### MCP Configuration (`.mcp.json`)
 
 ```json
 {
-  "system": {
-    "managementPort": 3000,
-    "projectPortRange": [30000, 40000],
-    "heartbeatInterval": 30000,
-    "cleanupTtl": 300000
-  },
-  "security": {
-    "enableAuth": true,
-    "tokenExpiry": 3600,
-    "authMethod": "jwt"
-  },
-  "monitoring": {
-    "enableLogging": true,
-    "logLevel": "info",
-    "enableMetrics": true
+  "mcpServers": {
+    "engineering-manager": {
+      "command": "node",
+      "args": ["/path/to/multi-agent/src/hybrid-persona-mcp-server.js"],
+      "env": {
+        "PERSONA_NAME": "engineering-manager",
+        "PERSONA_DIR": "./.claude-agents/engineering-manager"
+      }
+    },
+    "product-manager": {
+      "command": "node", 
+      "args": ["/path/to/multi-agent/src/hybrid-persona-mcp-server.js"],
+      "env": {
+        "PERSONA_NAME": "product-manager",
+        "PERSONA_DIR": "./.claude-agents/product-manager"
+      }
+    },
+    "qa-manager": {
+      "command": "node",
+      "args": ["/path/to/multi-agent/src/hybrid-persona-mcp-server.js"], 
+      "env": {
+        "PERSONA_NAME": "qa-manager",
+        "PERSONA_DIR": "./.claude-agents/qa-manager"
+      }
+    }
   }
 }
 ```
@@ -356,11 +376,13 @@ System configuration is stored in `~/.claude-agents/config.json`:
 ### Environment Variables
 
 ```bash
-# Override default configuration
-export CLAUDE_AGENTS_HOME=~/.claude-agents
-export PERSONA_MANAGEMENT_PORT=3000
-export PROJECT_AGENTS_PORT_RANGE=30000-40000
-export PROJECT_AGENTS_TIMEOUT=3600
+# Persona configuration
+export PERSONA_NAME=engineering-manager
+export PERSONA_DIR=/path/to/project/.claude-agents/engineering-manager
+
+# Claude Code headless mode
+export CLAUDE_HEADLESS_MODE=true
+export CLAUDE_ALLOWED_TOOLS="Write,Edit,Read,Bash,LS,Glob,Grep,MultiEdit"
 ```
 
 ## 🤝 Contributing
@@ -377,30 +399,31 @@ cd multi-agent-mcp-framework
 # Install dependencies
 npm install
 
+# Initialize global personas
+npm run init-personas
+
 # Run tests
 npm test
 
-# Build the project
-npm run build
-
-# Start in development mode
-npm run dev
+# Test with a sample project
+npm run init-project-personas -- --project /path/to/test/project
 ```
 
 ### Code Style
 
-- TypeScript with strict mode enabled
+- JavaScript/TypeScript for core components
 - ESLint for code quality
-- Prettier for formatting
-- Comprehensive test coverage required
+- Clear documentation and examples
+- MCP protocol compliance
 
 ## 📚 Additional Resources
 
-- **[API Documentation](./docs/API_DOCUMENTATION.md)** - Complete API reference
+- **[Getting Started Guide](./docs/GETTING_STARTED.md)** - Detailed setup and usage
+- **[API Documentation](./docs/API_DOCUMENTATION.md)** - MCP tools and integration
 - **[Testing Guide](./docs/TESTING_GUIDE.md)** - How to test the system
-- **[Architecture Deep Dive](./docs/SPLIT_ARCHITECTURE_PLAN.md)** - Technical architecture details
-- **[Security Guide](./docs/security.md)** - Security best practices
-- **[Performance Tuning](./docs/performance.md)** - Optimization tips
+- **[Architecture Guide](./docs/ARCHITECTURE_UPDATED.md)** - Technical design details
+- **[Persona Usage Guide](./docs/PERSONA_USAGE_GUIDE.md)** - Working with AI personas
+- **[Troubleshooting](./docs/troubleshooting.md)** - Common issues and solutions
 
 ## 📄 License
 
@@ -409,13 +432,13 @@ This project is licensed under the MIT License - see the [LICENSE](./LICENSE) fi
 ## 🙏 Acknowledgments
 
 - Built on the [Model Context Protocol (MCP)](https://github.com/anthropics/model-context-protocol)
-- Designed for [Claude Code](https://claude.ai/code)
-- Uses microservices patterns for learning and development
+- Designed for [Claude Code](https://claude.ai/code) headless execution
+- Enables AI agent collaboration through specialized personas
 
 ---
 
 **Ready to enhance your development workflow with AI agents?**
 
-🚀 Run `npm install && npm run build && npm run persona-service:prod` to get started!
+🚀 Run `npm run init-personas && npm run init-project-personas -- --project /your/project` to get started!
 
 For questions or support, please [open an issue](https://github.com/your-org/multi-agent-mcp-framework/issues).

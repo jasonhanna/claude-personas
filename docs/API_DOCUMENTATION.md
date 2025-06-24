@@ -1,56 +1,309 @@
 # API Documentation
 
-⚠️ **DEVELOPMENT API ONLY** - Not for production use. No network security, credentials in logs.
+⚠️ **DEVELOPMENT TOOL ONLY** - For local development use.
 
-Complete reference for the Multi-Agent MCP Framework REST API for localhost development.
+Complete reference for the Multi-Agent MCP Framework, covering both MCP Tools and CLI commands.
 
 ## Table of Contents
 
-- [Authentication](#authentication)
-- [Base URLs](#base-urls)
-- [Core APIs](#core-apis)
-- [Context Management APIs](#context-management-apis)
-- [Memory Management APIs](#memory-management-apis)
-- [Service Discovery APIs](#service-discovery-apis)
-- [Health Monitoring APIs](#health-monitoring-apis)
-- [Authentication APIs](#authentication-apis)
-- [Error Responses](#error-responses)
-- [Rate Limiting](#rate-limiting)
+- [Overview](#overview)
+- [MCP Tools API](#mcp-tools-api)
+- [CLI Commands](#cli-commands)
+- [Execution Modes](#execution-modes)
+- [Project Configuration](#project-configuration)
+- [Persona Context Format](#persona-context-format)
+- [Error Handling](#error-handling)
 - [Examples](#examples)
 
-## Authentication
+## Overview
 
-⚠️ **Development-only authentication** - API keys are logged to console for convenience.
+The Multi-Agent MCP Framework provides two main interfaces:
 
-All API endpoints (except `/health`) require authentication via:
+1. **MCP Tools**: Used by Claude Code sessions to interact with personas
+2. **CLI Commands**: Used for setup, initialization, and management
 
-### API Key Authentication (Recommended)
+The system operates through distributed MCP servers (one per persona per project) rather than a centralized API service.
 
-```http
-X-API-Key: agent_[64-character-hex-string]
+## MCP Tools API
+
+### askPersona Tool
+
+The primary tool for interacting with persona agents.
+
+**Tool Name**: `askPersona`
+
+**Description**: Ask a persona for advice based on their expertise and project experience
+
+**Parameters**:
+- `question` (string, required): Question or request for the persona
+- `context` (string, optional): Additional context about the current situation
+
+**Response**: Text response from the persona based on their expertise and analysis of the project
+
+**Example Usage**:
+```javascript
+// In Claude Code session
+"Ask the engineering manager to review our API architecture"
+"Ask the product manager to prioritize these user stories: [story list]"
+"Ask the qa manager to design a test strategy for the checkout flow"
 ```
 
-### JWT Token Authentication
+### Tool Configuration
 
-```http
-Authorization: Bearer [jwt-token]
+MCP tools are automatically configured when you initialize personas for a project. The configuration is stored in `.mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "engineering-manager": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["/path/to/hybrid-persona-mcp-server.js"],
+      "env": {
+        "PERSONA_NAME": "engineering-manager",
+        "PERSONA_DIR": "/project/.claude-agents/engineering-manager",
+        "PROJECT_ROOT": "/project",
+        "PERSONA_MODE": "headless"
+      }
+    }
+  }
+}
+```
+## CLI Commands
+
+### Initialize Global Personas
+
+Create the global persona definitions shared across all projects:
+
+```bash
+npm run init-personas
 ```
 
-### API Key Permissions
+Creates:
+- `~/.claude-agents/personas/engineering-manager.md`
+- `~/.claude-agents/personas/product-manager.md` 
+- `~/.claude-agents/personas/qa-manager.md`
 
-API keys have role-based permissions:
+### Initialize Project Personas
 
-- **Admin**: Full system access
-- **Service**: Inter-service communication
-- **User**: Limited read/write access
+Set up personas for a specific project:
 
-## Base URLs
+```bash
+npm run init-project-personas -- --project PATH [options]
+```
 
-- **Production**: `http://localhost:3000`
-- **Development**: `http://localhost:3001`
-- **Testing**: `http://localhost:3002`
+**Options**:
+- `--project PATH` (required): Target project directory
+- `--personas LIST`: Comma-separated list of personas (default: all available)
+- `--mode MODE`: Execution mode - `headless` or `pty` (default: headless)
+- `--help`: Show help message
 
-All endpoints are prefixed with `/api` except health checks.
+**Examples**:
+```bash
+# Basic setup with headless mode (recommended)
+npm run init-project-personas -- --project /path/to/my-app
+
+# PTY mode (advanced)
+npm run init-project-personas -- --project /path/to/my-app --mode pty
+
+# Specific personas only
+npm run init-project-personas -- --project ../my-project --personas engineering-manager,qa-manager
+```
+
+**Creates**:
+- `.claude-agents/` directory in project
+- Individual persona instance directories with `CLAUDE.md` files
+- `.mcp.json` MCP server configuration
+
+## Execution Modes
+
+### Headless Mode (Default)
+
+**Environment Variable**: `PERSONA_MODE=headless`
+
+**Characteristics**:
+- Uses Claude Code's `-p` flag for non-interactive execution
+- Stateless - fresh persona context per interaction
+- No additional dependencies required
+- Simple process model with clean isolation
+
+**How It Works**:
+1. Each `askPersona` call spawns `claude -p` from project root
+2. Persona context from `CLAUDE.md` injected into prompt
+3. Direct stdout capture for clean responses
+4. Process exits cleanly after response
+
+### PTY Mode (Future)
+
+**Environment Variable**: `PERSONA_MODE=pty`
+
+**Characteristics**:
+- Persistent Claude sessions via pseudo-terminal
+- Stateful conversations with session memory
+- Requires `node-pty` dependency
+- Complex session management
+
+**Status**: Architecture designed but not yet implemented. See `docs/PTY_INTERACTIVE_WRAPPER_ARCHITECTURE.md` for full details.
+
+## Project Configuration
+
+### MCP Configuration (`.mcp.json`)
+
+Generated automatically by `init-project-personas`:
+
+```json
+{
+  "mcpServers": {
+    "engineering-manager": {
+      "type": "stdio",
+      "command": "node", 
+      "args": ["/absolute/path/to/hybrid-persona-mcp-server.js"],
+      "env": {
+        "PERSONA_NAME": "engineering-manager",
+        "PERSONA_DIR": "/project/.claude-agents/engineering-manager", 
+        "PROJECT_ROOT": "/project",
+        "PERSONA_MODE": "headless"
+      }
+    },
+    "product-manager": { /* similar */ },
+    "qa-manager": { /* similar */ }
+  }
+}
+```
+
+### Environment Variables
+
+**Per-MCP Server**:
+- `PERSONA_NAME`: Name of the persona (e.g., "engineering-manager")
+- `PERSONA_DIR`: Directory containing persona instance files
+- `PROJECT_ROOT`: Root directory of the project (working directory for Claude)
+- `PERSONA_MODE`: Execution mode ("headless" or "pty")
+
+## Persona Context Format
+
+Personas are defined using markdown files with a specific structure:
+
+### Global Persona (`~/.claude-agents/personas/persona-name.md`)
+
+```markdown
+# Persona Name - Character Name
+
+## About Me
+Brief description of the persona's background and expertise.
+
+## My Core Responsibilities
+- Bullet points of key responsibilities
+- What they focus on in projects
+
+## My Technical Context  
+- Technical preferences and standards
+- Tools and methodologies they prefer
+
+## How I Communicate
+- **Tone**: Description of communication style
+- **Focus**: What they prioritize in discussions
+- **Style**: How they provide feedback
+
+## My Decision Framework
+Framework for how they make decisions:
+1. **Criteria 1**: Description
+2. **Criteria 2**: Description
+
+---
+
+## Project Memories
+*(Memories from working on various projects will appear here)*
+
+---
+
+## Patterns I've Learned
+*(Accumulated patterns and insights)*
+```
+
+### Project Instance (`project/.claude-agents/persona-name/CLAUDE.md`)
+
+Copy of the global persona definition, potentially with project-specific additions and accumulated memories.
+
+## Error Handling
+
+### Common Errors
+
+**Persona context not found**:
+```
+Error: ENOENT: no such file or directory, open '/path/to/CLAUDE.md'
+```
+- **Cause**: Persona not initialized for project
+- **Solution**: Run `npm run init-project-personas`
+
+**Claude command not found**:
+```
+Error: spawn claude ENOENT
+```
+- **Cause**: Claude Code CLI not installed or not in PATH
+- **Solution**: Install Claude Code and verify with `claude --version`
+
+**PTY mode not implemented**:
+```
+Error: PTY mode not yet implemented. Please use headless mode.
+```
+- **Cause**: PTY mode selected but not implemented
+- **Solution**: Use headless mode (default) or help implement PTY mode
+
+### MCP Tool Errors
+
+Errors are returned as MCP tool responses:
+
+```json
+{
+  "content": [{
+    "type": "text", 
+    "text": "Sorry, I encountered an error: [error message]. Please try again."
+  }]
+}
+```
+
+## Examples
+
+### Basic Persona Interaction
+
+```bash
+# In your project directory
+claude
+# Then in Claude session:
+# "Ask the engineering manager to review our database schema"
+```
+
+**Behind the scenes**:
+1. Claude Code calls `askPersona` tool on engineering-manager MCP server
+2. MCP server loads persona context from `.claude-agents/engineering-manager/CLAUDE.md`
+3. Spawns `claude -p` from project root with combined prompt
+4. Returns persona's analysis based on actual project files
+
+### Multi-Persona Consultation
+
+```bash
+# Sequential consultations
+"Ask the product manager about user story priorities"
+"Ask the engineering manager about technical feasibility of those stories" 
+"Ask the qa manager about testing strategy for the top priorities"
+```
+
+### Project Setup Workflow
+
+```bash
+# 1. One-time global setup
+npm run init-personas
+
+# 2. Per-project setup  
+cd /path/to/my-project
+npm run init-project-personas -- --project .
+
+# 3. Start Claude in project
+claude
+# Now personas are available via askPersona tool
+```
+
+This completes the API documentation covering the streamlined MCP-based architecture with headless mode execution.
 
 ## Core APIs
 
