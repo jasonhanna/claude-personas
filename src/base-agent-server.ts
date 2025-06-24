@@ -10,6 +10,8 @@ import { AuthService, createDevelopmentAuthService } from './auth/auth-service.j
 import { AgentError, ValidationError, MemoryError, CommunicationError } from './errors.js';
 import path from 'path';
 import { createServer } from 'net';
+import { GlobalResourceRegistry } from './resource-registry.js';
+import { globalRetrySystem } from './intelligent-retry-system.js';
 
 // Use process.cwd() and relative path resolution instead of import.meta.url
 // This works for the runtime directory structure where the compiled JS files are in dist/
@@ -71,7 +73,8 @@ export class BaseAgentServer {
       defaultTimeout: 30000,
       defaultRetries: 3,
       cleanupInterval: 60000,
-      messageRetention: 7 * 24 * 60 * 60 * 1000 // 7 days
+      messageRetention: 7 * 24 * 60 * 60 * 1000, // 7 days
+      agentId: persona.role // Pass the agent's role as its ID
     });
     
     this.connectionManager = new ConnectionManager({
@@ -452,8 +455,22 @@ export class BaseAgentServer {
         
         default:
           operationType = 'TOOL_MANAGER';
-          // For all other tools, delegate to ToolManager
-          result = await this.toolManager.callTool(name, args);
+          // For all other tools, delegate to ToolManager with intelligent retry
+          const retryResult = await globalRetrySystem.executeWithRetry(
+            name,
+            args,
+            async (retryArgs) => await this.toolManager.callTool(name, retryArgs)
+          );
+          
+          if (retryResult.success) {
+            result = retryResult.result;
+            if (retryResult.attempts > 1) {
+              console.log(`[${new Date().toISOString()}] TOOL_RETRY_SUCCESS: ${executionId} - ${name} succeeded after ${retryResult.attempts} attempts using strategies: ${retryResult.strategies.join(', ')}`);
+            }
+          } else {
+            console.error(`[${new Date().toISOString()}] TOOL_RETRY_FAILED: ${executionId} - ${name} failed after ${retryResult.attempts} attempts using strategies: ${retryResult.strategies.join(', ')}`);
+            throw retryResult.error;
+          }
           break;
       }
       
@@ -536,25 +553,99 @@ export class BaseAgentServer {
   }
 
   async stop() {
+    const errors: Error[] = [];
+    
     try {
       console.error(`[${new Date().toISOString()}] Stopping ${this.persona.name} agent...`);
       
-      // Stop HTTP transport
-      await this.httpTransport.disconnect();
-      console.error(`[${new Date().toISOString()}] HTTP transport disconnected`);
+      // Shutdown order is critical for preventing hanging:
+      // 1. MCP server (stdio connections)
+      // 2. HTTP transport (active connections)
+      // 3. Connection manager (discovery timers)
+      // 4. Message broker (database and cleanup timers)
+      // 5. HTTP server (listening socket)
+      // 6. Auth service (any background processes)
       
-      // Stop messaging system
-      await this.connectionManager.stop();
-      await this.messageBroker.stop();
-      console.error(`[${new Date().toISOString()}] Messaging system stopped`);
+      // Stop MCP server first (critical for test cleanup)
+      try {
+        await this.mcpServer.disconnect();
+        console.error(`[${new Date().toISOString()}] MCP server disconnected`);
+      } catch (error) {
+        errors.push(error instanceof Error ? error : new Error(String(error)));
+        console.error(`[${new Date().toISOString()}] Error stopping MCP server:`, error);
+      }
+      
+      // Stop HTTP transport
+      try {
+        await this.httpTransport.disconnect();
+        console.error(`[${new Date().toISOString()}] HTTP transport disconnected`);
+      } catch (error) {
+        errors.push(error instanceof Error ? error : new Error(String(error)));
+        console.error(`[${new Date().toISOString()}] Error stopping HTTP transport:`, error);
+      }
+      
+      // Stop messaging system in proper order
+      try {
+        await this.connectionManager.stop();
+        console.error(`[${new Date().toISOString()}] Connection manager stopped`);
+      } catch (error) {
+        errors.push(error instanceof Error ? error : new Error(String(error)));
+        console.error(`[${new Date().toISOString()}] Error stopping connection manager:`, error);
+      }
+      
+      try {
+        await this.messageBroker.stop();
+        console.error(`[${new Date().toISOString()}] Message broker stopped`);
+      } catch (error) {
+        errors.push(error instanceof Error ? error : new Error(String(error)));
+        console.error(`[${new Date().toISOString()}] Error stopping message broker:`, error);
+      }
       
       // Stop HTTP server
-      await this.httpEndpoints.stop();
-      console.error(`[${new Date().toISOString()}] HTTP server stopped`);
+      try {
+        await this.httpEndpoints.stop();
+        console.error(`[${new Date().toISOString()}] HTTP server stopped`);
+      } catch (error) {
+        errors.push(error instanceof Error ? error : new Error(String(error)));
+        console.error(`[${new Date().toISOString()}] Error stopping HTTP server:`, error);
+      }
+      
+      // Auth service cleanup (no explicit stop method needed)
+      try {
+        // AuthService doesn't require explicit cleanup as it only manages tokens
+        // and doesn't maintain persistent connections or background processes
+        console.error(`[${new Date().toISOString()}] Auth service cleanup completed (no explicit stop method required)`);
+      } catch (error) {
+        errors.push(error instanceof Error ? error : new Error(String(error)));
+        console.error(`[${new Date().toISOString()}] Error during auth service cleanup:`, error);
+      }
       
       console.error(`[${new Date().toISOString()}] ${this.persona.name} agent stopped`);
+      
+      // If there were errors during cleanup, throw them as an aggregate
+      if (errors.length > 0) {
+        // Use a simple Error with combined messages for compatibility
+        const combinedMessage = `Errors occurred during ${this.persona.name} agent shutdown: ${errors.map(e => e.message).join('; ')}`;
+        throw new Error(combinedMessage);
+      }
     } catch (error) {
       console.error(`[${new Date().toISOString()}] Error stopping ${this.persona.name} agent:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Emergency shutdown that cleans up all global resources
+   * Use this when normal shutdown fails or in test environments
+   */
+  static async emergencyShutdown(): Promise<void> {
+    try {
+      const globalRegistry = GlobalResourceRegistry.getInstance();
+      await globalRegistry.cleanupAll();
+      console.error(`[${new Date().toISOString()}] Emergency shutdown completed`);
+    } catch (error) {
+      console.error(`[${new Date().toISOString()}] Emergency shutdown failed:`, error);
+      throw error;
     }
   }
 

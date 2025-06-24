@@ -4,12 +4,17 @@ import path from 'path';
 import fs from 'fs/promises';
 import { fileURLToPath } from 'url';
 import { createServer } from 'net';
+import { randomBytes } from 'crypto';
 import yaml from 'js-yaml';
 import { AgentError, ValidationError } from './errors.js';
+import { createLogger } from './utils/logger.js';
 import PersonaManager, { PersonaConfig, SystemConfig } from './persona-manager.js';
 import { ProjectRegistry } from './project-registry.js';
 import { ContextManager } from './context-manager.js';
 import { MemoryLockManager } from './memory-lock-manager.js';
+import ServiceDiscovery, { ServiceEndpoint } from './service-discovery.js';
+import HealthMonitor from './health-monitor.js';
+import AuthService, { AuthConfig, AuthenticatedRequest } from './auth-middleware.js';
 import {
   PersonaConfigSchema,
   PersonaUpdateSchema,
@@ -40,8 +45,8 @@ class AgentSystemError extends AgentError {
   }
 }
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// Get directory path using process.cwd() for cross-environment compatibility
+const serviceDir = process.cwd() + '/src';
 
 // PersonaConfig imported from persona-manager.ts
 
@@ -77,6 +82,10 @@ export class PersonaManagementService {
   private projectRegistry: ProjectRegistry;
   private contextManager: ContextManager;
   private lockManager: MemoryLockManager;
+  private serviceDiscovery: ServiceDiscovery;
+  private healthMonitor: HealthMonitor;
+  private authService!: AuthService;
+  private logger = createLogger('PersonaManagementService');
   
   // Registry data
   private personas = new Map<string, PersonaConfig>();
@@ -99,6 +108,8 @@ export class PersonaManagementService {
     this.projectRegistry = new ProjectRegistry(claudeAgentsHome);
     this.contextManager = new ContextManager(claudeAgentsHome);
     this.lockManager = new MemoryLockManager(claudeAgentsHome);
+    this.serviceDiscovery = new ServiceDiscovery();
+    this.healthMonitor = new HealthMonitor(this.serviceDiscovery);
     
     // Default configuration
     this.config = {
@@ -130,12 +141,26 @@ export class PersonaManagementService {
     this.app.use(express.json({ limit: '10mb' }));
     this.app.use(express.urlencoded({ extended: true }));
     
+    // Initialize authentication service after config is available
+    if (!this.authService) {
+      const authConfig: AuthConfig = {
+        enableAuth: this.config.security.enableAuth,
+        tokenExpiry: this.config.security.tokenExpiry,
+        secretKey: process.env.JWT_SECRET || this.generateSecretKey(),
+        issuer: 'persona-management-service',
+        audience: 'multi-agent-system'
+      };
+      this.authService = new AuthService(authConfig);
+    }
+    
     // Request logging middleware
     this.app.use((req: Request, res: Response, next) => {
-      const timestamp = new Date().toISOString();
-      console.log(`[${timestamp}] ${req.method} ${req.path} - ${req.ip}`);
+      this.logger.debug(`${req.method} ${req.path} - ${req.ip}`);
       next();
     });
+
+    // Authentication middleware (applied to all routes except health)
+    this.app.use(this.authService.publicEndpoints() as any);
   }
 
   private setupRoutes(): void {
@@ -200,6 +225,30 @@ export class PersonaManagementService {
     this.app.delete('/api/locks/:lockId', this.handleReleaseLock.bind(this));
     this.app.post('/api/locks/update', this.handleUpdateMemoryWithLock.bind(this));
 
+    // Phase 3: Service Discovery
+    this.app.get('/api/services', this.handleGetServices.bind(this));
+    this.app.post('/api/services/register', this.handleRegisterService.bind(this));
+    this.app.delete('/api/services/:serviceId', this.handleUnregisterService.bind(this));
+    this.app.get('/api/services/:serviceId', this.handleGetService.bind(this));
+    this.app.post('/api/services/:serviceId/heartbeat', this.handleServiceHeartbeat.bind(this));
+
+    // Phase 3: Health Monitoring
+    this.app.get('/api/health/dashboard', this.handleGetHealthDashboard.bind(this));
+    this.app.get('/api/health/metrics', this.handleGetHealthMetrics.bind(this));
+    this.app.get('/api/health/errors', this.handleGetHealthErrors.bind(this));
+    this.app.post('/api/health/errors/:errorId/resolve', this.handleResolveHealthError.bind(this));
+
+    // Phase 3: Alert Management
+    this.app.get('/api/alerts/rules', this.handleGetAlertRules.bind(this));
+    this.app.post('/api/alerts/rules', this.handleCreateAlertRule.bind(this));
+    this.app.delete('/api/alerts/rules/:ruleId', this.handleDeleteAlertRule.bind(this));
+
+    // Phase 3: Authentication Management
+    this.app.post('/api/auth/token', this.handleGenerateToken.bind(this));
+    this.app.post('/api/auth/apikey', this.handleGenerateApiKey.bind(this));
+    this.app.delete('/api/auth/apikey/:apiKey', this.handleRevokeApiKey.bind(this));
+    this.app.post('/api/auth/project-token', this.handleGenerateProjectToken.bind(this));
+
     // Error handling middleware
     this.app.use((err: Error, req: Request, res: Response, next: any) => {
       console.error(`[${new Date().toISOString()}] API Error:`, err);
@@ -235,7 +284,7 @@ export class PersonaManagementService {
       const isAvailable = await this.isPortAvailable(port);
       if (isAvailable) {
         this.allocatedPorts.add(port);
-        console.log(`[${new Date().toISOString()}] Allocated port ${port} for ${persona || 'unknown'} (project: ${projectHash || 'none'})`);
+        this.logger.info(`Allocated port ${port} for ${persona || 'unknown'} (project: ${projectHash || 'none'})`);
         return port;
       }
     }
@@ -250,7 +299,7 @@ export class PersonaManagementService {
 
   async releasePort(port: number): Promise<void> {
     this.allocatedPorts.delete(port);
-    console.log(`[${new Date().toISOString()}] Released port ${port}`);
+    this.logger.info(`Released port ${port}`);
   }
 
   private async isPortAvailable(port: number): Promise<boolean> {
@@ -533,7 +582,7 @@ export class PersonaManagementService {
       await this.projectRegistry.registerProject({ projectHash, workingDirectory });
       await this.projectRegistry.registerSession({ sessionId, projectHash, pid });
       
-      console.log(`[${new Date().toISOString()}] Registered session ${sessionId} for project ${projectHash}`);
+      this.logger.debug(`Registered session ${sessionId} for project ${projectHash}`);
       
       res.status(201).json({
         sessionId,
@@ -568,7 +617,7 @@ export class PersonaManagementService {
       const { id } = req.params;
       
       await this.projectRegistry.removeSession(id);
-      console.log(`[${new Date().toISOString()}] Removed session ${id}`);
+      this.logger.debug(`Removed session ${id}`);
       
       res.json({ status: 'session removed' });
     } catch (error: any) {
@@ -589,7 +638,7 @@ export class PersonaManagementService {
       await this.projectRegistry.registerProject({ projectHash, workingDirectory });
       await this.projectRegistry.registerAgent({ projectHash, persona, port, pid });
       
-      console.log(`[${new Date().toISOString()}] Registered project agent ${persona} for project ${projectHash} on port ${port}`);
+      this.logger.info(`Registered project agent ${persona} for project ${projectHash} on port ${port}`);
       
       res.json({ 
         status: 'agent registered',
@@ -657,7 +706,7 @@ export class PersonaManagementService {
 
   private async handleInitialize(req: Request, res: Response): Promise<void> {
     try {
-      console.log(`[${new Date().toISOString()}] Manual system initialization requested`);
+      this.logger.debug('Manual system initialization requested');
       
       // Re-run initialization
       await this.initializeSystem();
@@ -722,7 +771,7 @@ export class PersonaManagementService {
       this.performCleanup();
     }, this.config.system.heartbeatInterval);
     
-    console.log(`[${new Date().toISOString()}] Cleanup system started (TTL: ${this.config.system.cleanupTtl}ms)`);
+    this.logger.info(`Cleanup system started (TTL: ${this.config.system.cleanupTtl}ms)`);
   }
 
   private performCleanup(): void {
@@ -743,15 +792,15 @@ export class PersonaManagementService {
           
           // If no more sessions, clean up project agents
           if (project.sessions.length === 0) {
-            console.log(`[${new Date().toISOString()}] No more sessions for project ${session.projectHash}, cleaning up agents`);
-            // TODO: Stop project agents
+            this.logger.debug(`No more sessions for project ${session.projectHash}, cleaning up agents`);
+            // TODO: Issue #8 - Stop project agents
           }
         }
       }
     }
     
     if (staleSessionsCount > 0) {
-      console.log(`[${new Date().toISOString()}] Cleaned up ${staleSessionsCount} stale sessions`);
+      this.logger.debug(`Cleaned up ${staleSessionsCount} stale sessions`);
     }
     
     // Clean up unhealthy agents
@@ -767,7 +816,7 @@ export class PersonaManagementService {
     }
     
     if (unhealthyAgentsCount > 0) {
-      console.log(`[${new Date().toISOString()}] Cleaned up ${unhealthyAgentsCount} unhealthy agents`);
+      this.logger.debug(`Cleaned up ${unhealthyAgentsCount} unhealthy agents`);
     }
   }
 
@@ -1027,7 +1076,7 @@ export class PersonaManagementService {
 
   async start(): Promise<void> {
     try {
-      console.log(`[${new Date().toISOString()}] Starting Persona Management Service...`);
+      this.logger.info('Starting Persona Management Service...');
       
       // Check if port is available
       const portAvailable = await this.isPortAvailable(this.port);
@@ -1051,13 +1100,32 @@ export class PersonaManagementService {
       
       // Start cleanup system
       this.startCleanupSystem();
+
+      // Initialize Phase 3: Service Discovery and Health Monitoring
+      this.healthMonitor.startMonitoring();
+      
+      // Register this management service
+      await this.serviceDiscovery.registerService({
+        name: 'persona-management-service',
+        type: 'management',
+        host: 'localhost',
+        port: this.port,
+        status: 'healthy',
+        metadata: {
+          version: '1.0.0',
+          startTime: Date.now(),
+          lastSeen: Date.now()
+        },
+        healthEndpoint: `http://localhost:${this.port}/health`,
+        tags: ['management', 'core', 'api']
+      });
       
       // Start HTTP server
       return new Promise((resolve, reject) => {
         this.server = this.app.listen(this.port, () => {
-          console.log(`[${new Date().toISOString()}] Persona Management Service started on port ${this.port}`);
-          console.log(`[${new Date().toISOString()}] Health check: http://localhost:${this.port}/health`);
-          console.log(`[${new Date().toISOString()}] API documentation: http://localhost:${this.port}/api`);
+          this.logger.info(`Persona Management Service started on port ${this.port}`);
+          this.logger.info(`Health check: http://localhost:${this.port}/health`);
+          this.logger.info(`API documentation: http://localhost:${this.port}/api`);
           resolve();
         });
         
@@ -1071,20 +1139,24 @@ export class PersonaManagementService {
         });
       });
     } catch (error) {
-      console.error(`[${new Date().toISOString()}] Failed to start Persona Management Service:`, error);
+      this.logger.error('Failed to start Persona Management Service:', error);
       throw error;
     }
   }
 
   async stop(): Promise<void> {
     try {
-      console.log(`[${new Date().toISOString()}] Stopping Persona Management Service...`);
+      this.logger.info('Stopping Persona Management Service...');
       
       // Stop cleanup timer
       if (this.cleanupTimer) {
         clearInterval(this.cleanupTimer);
         this.cleanupTimer = undefined;
       }
+
+      // Shutdown Phase 3 services
+      await this.healthMonitor.shutdown();
+      await this.serviceDiscovery.shutdown();
 
       // Shutdown memory lock manager
       await this.lockManager.shutdown();
@@ -1093,7 +1165,7 @@ export class PersonaManagementService {
       if (this.server) {
         return new Promise((resolve) => {
           this.server.close(() => {
-            console.log(`[${new Date().toISOString()}] Persona Management Service stopped`);
+            this.logger.info('Persona Management Service stopped');
             resolve();
           });
         });
@@ -1103,9 +1175,378 @@ export class PersonaManagementService {
     }
   }
 
+  // Phase 3: Service Discovery Handlers
+  private async handleGetServices(req: Request, res: Response): Promise<void> {
+    try {
+      const { type, persona, projectHash, status } = req.query;
+      
+      const services = await this.serviceDiscovery.discoverServices({
+        type: type as any,
+        persona: persona as string,
+        projectHash: projectHash as string,
+        status: status as any
+      });
+
+      res.json({
+        success: true,
+        services,
+        total: services.length
+      });
+    } catch (error: any) {
+      console.error('Error getting services:', error);
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  }
+
+  private async handleRegisterService(req: Request, res: Response): Promise<void> {
+    try {
+      const serviceData = req.body;
+      const serviceId = await this.serviceDiscovery.registerService(serviceData);
+
+      res.json({
+        success: true,
+        serviceId,
+        message: 'Service registered successfully'
+      });
+    } catch (error: any) {
+      console.error('Error registering service:', error);
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  }
+
+  private async handleUnregisterService(req: Request, res: Response): Promise<void> {
+    try {
+      const { serviceId } = req.params;
+      const success = await this.serviceDiscovery.unregisterService(serviceId);
+
+      if (success) {
+        res.json({
+          success: true,
+          message: 'Service unregistered successfully'
+        });
+      } else {
+        res.status(404).json({
+          success: false,
+          error: 'Service not found'
+        });
+      }
+    } catch (error: any) {
+      console.error('Error unregistering service:', error);
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  }
+
+  private async handleGetService(req: Request, res: Response): Promise<void> {
+    try {
+      const { serviceId } = req.params;
+      const service = await this.serviceDiscovery.getService(serviceId);
+
+      if (service) {
+        res.json({
+          success: true,
+          service
+        });
+      } else {
+        res.status(404).json({
+          success: false,
+          error: 'Service not found'
+        });
+      }
+    } catch (error: any) {
+      console.error('Error getting service:', error);
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  }
+
+  private async handleServiceHeartbeat(req: Request, res: Response): Promise<void> {
+    try {
+      const { serviceId } = req.params;
+      const metadata = req.body;
+      
+      const success = await this.serviceDiscovery.updateServiceHeartbeat(serviceId, metadata);
+
+      if (success) {
+        res.json({
+          success: true,
+          message: 'Heartbeat updated successfully'
+        });
+      } else {
+        res.status(404).json({
+          success: false,
+          error: 'Service not found'
+        });
+      }
+    } catch (error: any) {
+      console.error('Error updating service heartbeat:', error);
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  }
+
+  // Phase 3: Health Monitoring Handlers
+  private async handleGetHealthDashboard(req: Request, res: Response): Promise<void> {
+    try {
+      const dashboardData = await this.healthMonitor.getDashboardData();
+      res.json({
+        success: true,
+        dashboard: dashboardData
+      });
+    } catch (error: any) {
+      console.error('Error getting health dashboard:', error);
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  }
+
+  private async handleGetHealthMetrics(req: Request, res: Response): Promise<void> {
+    try {
+      const metrics = await this.healthMonitor.collectMetrics();
+      res.json({
+        success: true,
+        metrics
+      });
+    } catch (error: any) {
+      console.error('Error getting health metrics:', error);
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  }
+
+  private async handleGetHealthErrors(req: Request, res: Response): Promise<void> {
+    try {
+      const { limit } = req.query;
+      const limitNum = limit ? parseInt(limit as string, 10) : 100;
+      
+      const errors = this.healthMonitor.getErrorHistory(limitNum);
+      res.json({
+        success: true,
+        errors,
+        total: errors.length
+      });
+    } catch (error: any) {
+      console.error('Error getting health errors:', error);
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  }
+
+  private async handleResolveHealthError(req: Request, res: Response): Promise<void> {
+    try {
+      const { errorId } = req.params;
+      const success = this.healthMonitor.resolveError(errorId);
+
+      if (success) {
+        res.json({
+          success: true,
+          message: 'Error resolved successfully'
+        });
+      } else {
+        res.status(404).json({
+          success: false,
+          error: 'Error not found'
+        });
+      }
+    } catch (error: any) {
+      console.error('Error resolving health error:', error);
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  }
+
+  // Phase 3: Alert Management Handlers
+  private async handleGetAlertRules(req: Request, res: Response): Promise<void> {
+    try {
+      const rules = this.healthMonitor.getAlertRules();
+      res.json({
+        success: true,
+        rules,
+        total: rules.length
+      });
+    } catch (error: any) {
+      console.error('Error getting alert rules:', error);
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  }
+
+  private async handleCreateAlertRule(req: Request, res: Response): Promise<void> {
+    try {
+      const ruleData = req.body;
+      const ruleId = this.healthMonitor.addAlertRule(ruleData);
+
+      res.json({
+        success: true,
+        ruleId,
+        message: 'Alert rule created successfully'
+      });
+    } catch (error: any) {
+      console.error('Error creating alert rule:', error);
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  }
+
+  private async handleDeleteAlertRule(req: Request, res: Response): Promise<void> {
+    try {
+      const { ruleId } = req.params;
+      const success = this.healthMonitor.removeAlertRule(ruleId);
+
+      if (success) {
+        res.json({
+          success: true,
+          message: 'Alert rule deleted successfully'
+        });
+      } else {
+        res.status(404).json({
+          success: false,
+          error: 'Alert rule not found'
+        });
+      }
+    } catch (error: any) {
+      console.error('Error deleting alert rule:', error);
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  }
+
+  // Phase 3: Authentication Handlers
+  private async handleGenerateToken(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      const { userId, role, permissions, projectHash, persona } = req.body;
+      
+      const token = this.authService.generateToken({
+        userId,
+        role,
+        permissions: permissions || [],
+        projectHash,
+        persona
+      });
+
+      res.json({
+        success: true,
+        token,
+        expiresIn: this.config.security.tokenExpiry
+      });
+    } catch (error: any) {
+      console.error('Error generating token:', error);
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  }
+
+  private async handleGenerateApiKey(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      const { userId, role, permissions } = req.body;
+      
+      const apiKey = this.authService.generateApiKey({
+        userId,
+        role,
+        permissions: permissions || []
+      });
+
+      res.json({
+        success: true,
+        apiKey,
+        message: 'API key generated successfully'
+      });
+    } catch (error: any) {
+      console.error('Error generating API key:', error);
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  }
+
+  private async handleRevokeApiKey(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      const { apiKey } = req.params;
+      const success = this.authService.revokeApiKey(apiKey);
+
+      if (success) {
+        res.json({
+          success: true,
+          message: 'API key revoked successfully'
+        });
+      } else {
+        res.status(404).json({
+          success: false,
+          error: 'API key not found'
+        });
+      }
+    } catch (error: any) {
+      console.error('Error revoking API key:', error);
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  }
+
+  private async handleGenerateProjectToken(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      const { projectHash, persona, permissions } = req.body;
+      
+      const token = this.authService.generateProjectToken(
+        projectHash,
+        persona,
+        permissions || []
+      );
+
+      res.json({
+        success: true,
+        token,
+        projectHash,
+        persona,
+        expiresIn: this.config.security.tokenExpiry
+      });
+    } catch (error: any) {
+      console.error('Error generating project token:', error);
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  }
+
+  // Utility method
+  private generateSecretKey(): string {
+    return randomBytes(64).toString('hex');
+  }
+
   private async initializeSystem(): Promise<void> {
     try {
-      console.log(`[${new Date().toISOString()}] Initializing Persona Management System...`);
+      this.logger.info('Initializing Persona Management System...');
       
       // Initialize directory structure
       await this.personaManager.initializeDirectoryStructure();
@@ -1117,11 +1558,11 @@ export class PersonaManagementService {
       const loadedConfig = await this.personaManager.loadConfig();
       if (loadedConfig) {
         this.config = loadedConfig;
-        console.log(`[${new Date().toISOString()}] Loaded configuration from file`);
+        this.logger.debug('Loaded configuration from file');
       } else {
         // Save default config
         await this.personaManager.saveConfig(this.config);
-        console.log(`[${new Date().toISOString()}] Created default configuration`);
+        this.logger.debug('Created default configuration');
       }
       
       // Load all personas
@@ -1132,7 +1573,7 @@ export class PersonaManagementService {
         await this.personaManager.initializePersonaMemory(persona);
       }
       
-      console.log(`[${new Date().toISOString()}] System initialization complete`);
+      this.logger.info('System initialization complete');
     } catch (error) {
       throw new AgentSystemError(
         `System initialization failed: ${error instanceof Error ? error.message : String(error)}`,

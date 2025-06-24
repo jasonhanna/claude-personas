@@ -4,6 +4,8 @@
 
 import { Transport } from '../transport/transport-interface.js';
 import { ValidationError, CommunicationError } from '../errors.js';
+import { ResourceRegistry } from '../resource-registry.js';
+import { createLogger } from '../utils/logger.js';
 
 export interface AgentEndpoint {
   id: string;
@@ -46,6 +48,8 @@ export class ConnectionManager {
   private config: ConnectionConfig;
   private deps: ConnectionDependencies;
   private isStarted = false;
+  private resourceRegistry = new ResourceRegistry('ConnectionManager');
+  private logger = createLogger('ConnectionManager');
 
   constructor(
     config: Partial<ConnectionConfig> = {},
@@ -84,17 +88,22 @@ export class ConnectionManager {
       return;
     }
 
-    if (this.discoveryTimer) {
-      clearInterval(this.discoveryTimer);
+    try {
+      // Use ResourceRegistry for comprehensive cleanup
+      await this.resourceRegistry.cleanup();
+      
+      // Clear references to timers
       this.discoveryTimer = undefined;
-    }
-
-    if (this.healthCheckTimer) {
-      clearInterval(this.healthCheckTimer);
       this.healthCheckTimer = undefined;
-    }
 
-    this.isStarted = false;
+      this.isStarted = false;
+    } catch (error) {
+      this.isStarted = false;
+      throw new CommunicationError('Failed to stop ConnectionManager', {
+        component: 'ConnectionManager',
+        cause: error instanceof Error ? error.message : String(error)
+      });
+    }
   }
 
   registerTransport(name: string, transport: Transport): void {
@@ -116,7 +125,7 @@ export class ConnectionManager {
     });
 
     if (!existing) {
-      console.log(`Registered new agent: ${endpoint.id} (${endpoint.role}) at ${endpoint.address}:${endpoint.port}`);
+      this.logger.debug(`Registered new agent: ${endpoint.id} (${endpoint.role}) at ${endpoint.address}:${endpoint.port}`);
     }
   }
 
@@ -166,7 +175,7 @@ export class ConnectionManager {
     let filtered = candidates;
 
     if (criteria?.maxLatency) {
-      // TODO: Implement latency tracking
+      // TODO: Issue #11 - Implement latency tracking
       // For now, skip latency filtering
     }
 
@@ -184,7 +193,7 @@ export class ConnectionManager {
     }
 
     // Simple round-robin selection
-    // TODO: Implement more sophisticated load balancing
+    // TODO: Issue #12 - Implement more sophisticated load balancing
     const index = Math.floor(Math.random() * filtered.length);
     return filtered[index];
   }
@@ -194,6 +203,12 @@ export class ConnectionManager {
     this.discoveryTimer = this.deps.timer!(async () => {
       await this.discoverAgents();
     }, this.config.discoveryInterval);
+
+    // Register the timer for proper cleanup
+    this.resourceRegistry.registerInterval(this.discoveryTimer, {
+      name: 'discovery',
+      component: 'ConnectionManager'
+    });
 
     // Run initial discovery
     this.discoverAgents().catch(error => {
@@ -258,6 +273,12 @@ export class ConnectionManager {
     this.healthCheckTimer = this.deps.timer!(async () => {
       await this.performHealthChecks();
     }, this.config.healthCheckInterval);
+
+    // Register the timer for proper cleanup
+    this.resourceRegistry.registerInterval(this.healthCheckTimer, {
+      name: 'healthCheck',
+      component: 'ConnectionManager'
+    });
   }
 
   private async performHealthChecks(): Promise<void> {

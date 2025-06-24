@@ -130,6 +130,21 @@ export class MCPServer {
     console.error(`${this.persona.name} MCP server connected`);
   }
 
+  async disconnect(): Promise<void> {
+    try {
+      // The MCP SDK server doesn't have a direct disconnect method
+      // but we can close the transport by sending a close signal
+      if (this.server) {
+        // For stdio transport, we can close the streams
+        process.stdin.pause();
+        console.error(`${this.persona.name} MCP server disconnected`);
+      }
+    } catch (error) {
+      console.error(`Error disconnecting MCP server for ${this.persona.name}:`, error);
+      throw error;
+    }
+  }
+
   async createStdioProxy(httpPort: number, authToken?: string): Promise<void> {
     console.error(`[${new Date().toISOString()}] Creating stdio proxy for ${this.persona.name} to port ${httpPort}`);
     console.error(`[${new Date().toISOString()}] Auth token received: ${authToken ? `${authToken.substring(0, 20)}...` : 'undefined'}`);

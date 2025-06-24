@@ -1,5 +1,6 @@
 import { promises as fs } from 'fs';
 import path from 'path';
+import { createLogger } from './utils/logger.js';
 
 interface MemoryLock {
   lockId: string;
@@ -39,6 +40,7 @@ export class MemoryLockManager {
   private readonly versionsDir: string;
   private readonly lockTimeout: number = 60000; // 1 minute default
   private cleanupInterval: NodeJS.Timeout | null = null;
+  private logger = createLogger('MemoryLockManager');
 
   constructor(claudeAgentsHome?: string) {
     const baseDir = claudeAgentsHome || path.join(process.env.HOME || '~', '.claude-agents');
@@ -54,7 +56,7 @@ export class MemoryLockManager {
       // Start cleanup process for expired locks
       this.startCleanupProcess();
       
-      console.log('Memory lock manager initialized');
+      this.logger.info('Initialized');
     } catch (error) {
       console.error('Failed to initialize memory lock manager:', error);
       throw error;
@@ -144,7 +146,7 @@ export class MemoryLockManager {
           
           if (lock && lock.lockId === lockId) {
             await this.removeLock(lockFile);
-            console.log(`Released lock ${lockId}`);
+            this.logger.debug(`Released lock ${lockId}`);
             return true;
           }
         }
@@ -214,7 +216,7 @@ export class MemoryLockManager {
       // Release lock
       await this.removeLock(lockFile);
 
-      console.log(`Updated memory ${memoryId} to version ${newVersion}`);
+      this.logger.debug(`Updated memory ${memoryId} to version ${newVersion}`);
 
       return {
         success: true,
@@ -359,7 +361,7 @@ export class MemoryLockManager {
       }
 
       if (cleanedCount > 0) {
-        console.log(`Cleaned up ${cleanedCount} expired locks`);
+        this.logger.debug(`Cleaned up ${cleanedCount} expired locks`);
       }
     } catch (error) {
       console.error('Failed to cleanup expired locks:', error);
@@ -487,7 +489,7 @@ export class MemoryLockManager {
     
     // Run final cleanup
     await this.cleanupExpiredLocks();
-    console.log('Memory lock manager shutdown completed');
+    this.logger.info('Shutdown completed');
   }
 }
 

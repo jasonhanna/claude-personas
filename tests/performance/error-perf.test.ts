@@ -4,8 +4,25 @@ import {
   CommunicationError, 
   MemoryError 
 } from '../../src/errors.js';
+import { testEnvironments } from '../../src/test-utils/test-environment-separation.js';
 
 describe('Performance Tests - Error Handling', () => {
+  beforeEach(async () => {
+    // Set up performance test environment
+    const testName = expect.getState().currentTestName || 'error-perf-test';
+    const environment = testEnvironments.performance(testName);
+    await environment.setup();
+    (global as any).testEnvironment = environment;
+  });
+
+  afterEach(async () => {
+    // Clean up test environment
+    const environment = (global as any).testEnvironment;
+    if (environment) {
+      await environment.teardown();
+      delete (global as any).testEnvironment;
+    }
+  });
   
   describe('Error Creation Performance', () => {
     test('should create errors quickly', () => {

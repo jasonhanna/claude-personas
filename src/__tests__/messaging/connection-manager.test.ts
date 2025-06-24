@@ -2,9 +2,9 @@
  * Unit tests for Connection Manager
  */
 
+import { testEnvironments } from '../../test-utils/test-environment-separation.js';
 import { ConnectionManager, AgentEndpoint } from '../../messaging/connection-manager.js';
-import { MockTransport } from '../../test-utils/index.js';
-import { createTestConnectionManager, createTestAgentEndpoints, testAssertions } from '../../test-utils/index.js';
+import { MockTransport, createTestConnectionManager, createTestAgentEndpoints, testAssertions } from '../../test-utils/index.js';
 
 describe('Connection Manager', () => {
   let connectionManager: ConnectionManager;
@@ -12,6 +12,12 @@ describe('Connection Manager', () => {
   let mockTransport: MockTransport;
 
   beforeEach(async () => {
+    // Set up unit test environment for connection manager testing
+    const testName = expect.getState().currentTestName || 'connection-manager-test';
+    const environment = testEnvironments.unit(testName);
+    await environment.setup();
+    (global as any).testEnvironment = environment;
+
     const testSetup = createTestConnectionManager();
     connectionManager = testSetup.connectionManager;
     mockDependencies = testSetup.mockDependencies;
@@ -19,11 +25,27 @@ describe('Connection Manager', () => {
     mockTransport = new MockTransport();
     await mockTransport.connect();
     connectionManager.registerTransport('mock', mockTransport);
+    
+    // Register with resource registry for cleanup
+    const registry = environment.getResourceRegistry();
+    registry.registerResource(connectionManager, async () => {
+      await connectionManager.stop();
+    }, { name: 'connection-manager' });
+    registry.registerResource(mockTransport, async () => {
+      await mockTransport.disconnect();
+    }, { name: 'mock-transport' });
   });
 
   afterEach(async () => {
     await connectionManager.stop();
     await mockTransport.disconnect();
+    
+    // Clean up test environment
+    const environment = (global as any).testEnvironment;
+    if (environment) {
+      await environment.teardown();
+      delete (global as any).testEnvironment;
+    }
   });
 
   describe('Agent Registration', () => {

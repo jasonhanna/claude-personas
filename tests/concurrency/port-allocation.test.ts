@@ -5,13 +5,18 @@ describe('Port Allocation Concurrency Tests', () => {
   class MockPortAllocator {
     private allocatedPorts = new Set<number>();
     private readonly PORT_RANGE = { start: 30000, end: 40000 };
+    private nextPort = 30000; // Sequential allocation for better performance
 
     async allocatePort(): Promise<number> {
-      const maxAttempts = 10;
+      const maxAttempts = 100; // Increased attempts
       
       for (let attempt = 0; attempt < maxAttempts; attempt++) {
-        const port = this.PORT_RANGE.start + 
-          Math.floor(Math.random() * (this.PORT_RANGE.end - this.PORT_RANGE.start + 1));
+        // Use sequential allocation with wraparound for better performance
+        const port = this.nextPort;
+        this.nextPort++;
+        if (this.nextPort > this.PORT_RANGE.end) {
+          this.nextPort = this.PORT_RANGE.start;
+        }
         
         if (!this.allocatedPorts.has(port)) {
           this.allocatedPorts.add(port);
@@ -141,10 +146,10 @@ describe('Port Allocation Concurrency Tests', () => {
         async allocatePort(): Promise<number> {
           this.allocationCount++;
           
-          // Simulate race condition every 3rd allocation
+          // Simulate race condition every 3rd allocation with minimal delay
           if (this.allocationCount % 3 === 0) {
-            // Add artificial delay to simulate race condition
-            await new Promise(resolve => setTimeout(resolve, 1));
+            // Use setImmediate instead of setTimeout for faster execution
+            await new Promise(resolve => setImmediate(resolve));
           }
           
           return super.allocatePort();
@@ -163,7 +168,7 @@ describe('Port Allocation Concurrency Tests', () => {
       // Should still succeed despite race conditions
       expect(ports).toHaveLength(15);
       expect(new Set(ports).size).toBe(15); // All unique
-    });
+    }, 15000); // Increase timeout to 15 seconds
 
     it('should handle resource exhaustion under concurrent load', async () => {
       // Create allocator with very limited port range

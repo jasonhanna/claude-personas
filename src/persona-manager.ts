@@ -54,7 +54,7 @@ export class PersonaManager {
 
   constructor(claudeAgentsHome?: string, multiAgentHome?: string) {
     this.claudeAgentsHome = claudeAgentsHome || path.join(process.env.HOME || '', '.claude-agents');
-    this.multiAgentHome = multiAgentHome || path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
+    this.multiAgentHome = multiAgentHome || process.cwd();
   }
 
   /**

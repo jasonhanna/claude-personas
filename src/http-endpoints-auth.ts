@@ -294,7 +294,7 @@ export class AuthenticatedHTTPEndpoints {
         const since = parseInt(req.query.since as string) || 0;
         
         // For now, return empty messages array
-        // TODO: Integrate with MessageBroker to return actual pending messages
+        // TODO: Issue #13 - Integrate with MessageBroker to return actual pending messages
         res.json({
           messages: [],
           since: Date.now(),

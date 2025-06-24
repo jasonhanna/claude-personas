@@ -2,6 +2,7 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import yaml from 'js-yaml';
 import { PersonaConfig } from './persona-manager.js';
+import { createLogger } from './utils/logger.js';
 
 interface ContextLayer {
   source: 'project-persona' | 'project-claude' | 'global-persona' | 'default-persona';
@@ -38,6 +39,7 @@ export class ContextManager {
   private readonly personasDir: string;
   private readonly projectsDir: string;
   private readonly sharedDir: string;
+  private logger = createLogger('ContextManager');
 
   constructor(claudeAgentsHome?: string) {
     this.claudeAgentsDir = claudeAgentsHome || path.join(process.env.HOME || '~', '.claude-agents');
@@ -139,7 +141,7 @@ export class ContextManager {
       return { mergedContext, layers, memories };
 
     } catch (error) {
-      console.error('Failed to build hierarchical context:', error);
+      this.logger.error('Failed to build hierarchical context:', error);
       return { 
         mergedContext: `# ${persona}\n\nFailed to load context layers.`, 
         layers: [], 
@@ -186,9 +188,9 @@ export class ContextManager {
       
       await fs.writeFile(overlayPath, overlayContent);
 
-      console.log(`Created project persona overlay: ${overlayPath}`);
+      this.logger.debug(`Created project persona overlay: ${overlayPath}`);
     } catch (error) {
-      console.error('Failed to create project persona overlay:', error);
+      this.logger.error('Failed to create project persona overlay:', error);
       throw error;
     }
   }
@@ -223,7 +225,7 @@ export class ContextManager {
       if (conflict) {
         const resolution = await this.resolveMemoryConflict(memoryEntry, conflict);
         memoryEntry.content = resolution.resolvedContent;
-        console.log(`Memory conflict resolved: ${resolution.reason}`);
+        this.logger.debug(`Memory conflict resolved: ${resolution.reason}`);
       }
 
       // Save memory
@@ -235,7 +237,7 @@ export class ContextManager {
 
       return memoryEntry.id;
     } catch (error) {
-      console.error('Failed to save memory:', error);
+      this.logger.error('Failed to save memory:', error);
       throw error;
     }
   }
@@ -301,10 +303,10 @@ export class ContextManager {
         }
       }
 
-      console.log(`Memory synchronization completed: ${result.syncedCount} synced, ${result.conflicts} conflicts`);
+      this.logger.debug(`Memory synchronization completed: ${result.syncedCount} synced, ${result.conflicts} conflicts`);
       return result;
     } catch (error) {
-      console.error('Memory synchronization failed:', error);
+      this.logger.error('Memory synchronization failed:', error);
       const errorMessage = error instanceof Error ? error.message : String(error);
       result.errors.push(`Synchronization error: ${errorMessage}`);
       return result;
@@ -348,14 +350,14 @@ export class ContextManager {
             const memory = JSON.parse(content);
             memories.push(memory);
           } catch (error) {
-            console.warn(`Failed to load memory file ${file}:`, error);
+            this.logger.warn(`Failed to load memory file ${file}:`, error);
           }
         }
       }
 
       return memories.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
     } catch (error) {
-      console.error('Failed to load memories from directory:', error);
+      this.logger.error('Failed to load memories from directory:', error);
       return [];
     }
   }
@@ -510,7 +512,7 @@ export class ContextManager {
         const content = await fs.readFile(indexFile, 'utf8');
         index = JSON.parse(content);
       } catch (error) {
-        console.warn('Failed to load memory index, creating new one:', error);
+        this.logger.warn('Failed to load memory index, creating new one:', error);
       }
     }
 

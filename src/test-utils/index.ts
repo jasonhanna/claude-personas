@@ -290,6 +290,7 @@ export function createTestMessageBroker(overrides: any = {}): {
     batchSize: 10,
     cleanupInterval: 100, // Fast for tests
     messageRetention: 60000, // 1 minute for tests
+    agentId: 'current-agent', // Default agent ID for tests
     ...overrides
   };
 

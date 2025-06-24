@@ -4,6 +4,7 @@
  * Prevents cascading failures by failing fast when a service is unavailable
  * and automatically attempting recovery after a timeout period.
  */
+import { createLogger } from './utils/logger.js';
 
 export enum CircuitState {
   CLOSED = 'CLOSED',     // Normal operation
@@ -41,6 +42,7 @@ export class CircuitBreaker {
   private totalRequests: number = 0;
   private rejectedRequests: number = 0;
   private nextAttempt?: number;
+  private logger = createLogger('CircuitBreaker');
 
   constructor(
     private readonly config: CircuitBreakerConfig,
@@ -76,7 +78,8 @@ export class CircuitBreaker {
       
       // Transition to half-open
       this.state = CircuitState.HALF_OPEN;
-      console.log(`[CircuitBreaker] ${this.serviceName}: Transitioning to HALF_OPEN`);
+      this.successCount = 0; // Reset success count for HALF_OPEN state
+      this.logger.debug(`${this.serviceName}: Transitioning to HALF_OPEN`);
     }
 
     try {
@@ -126,7 +129,7 @@ export class CircuitBreaker {
   forceOpen(): void {
     this.state = CircuitState.OPEN;
     this.nextAttempt = Date.now() + this.config.recoveryTimeout;
-    console.log(`[CircuitBreaker] ${this.serviceName}: Forced to OPEN state`);
+    this.logger.debug(`${this.serviceName}: Forced to OPEN state`);
   }
 
   /**
@@ -137,19 +140,20 @@ export class CircuitBreaker {
     this.failureCount = 0;
     this.successCount = 0;
     this.nextAttempt = undefined;
-    console.log(`[CircuitBreaker] ${this.serviceName}: Forced to CLOSED state`);
+    this.logger.debug(`${this.serviceName}: Forced to CLOSED state`);
   }
 
   private onSuccess(): void {
-    this.successCount++;
     this.lastSuccessTime = Date.now();
     
     if (this.state === CircuitState.HALF_OPEN) {
+      this.successCount++;
       const successThreshold = this.config.successThreshold || 1;
       if (this.successCount >= successThreshold) {
         this.reset();
       }
     } else if (this.state === CircuitState.CLOSED) {
+      this.successCount++;
       // Reset failure count on success in closed state
       this.resetFailureCount();
     }
@@ -187,9 +191,7 @@ export class CircuitBreaker {
     this.nextAttempt = Date.now() + this.config.recoveryTimeout;
     this.successCount = 0; // Reset success count
     
-    console.log(
-      `[CircuitBreaker] ${this.serviceName}: Circuit OPENED after ${this.failureCount} failures`
-    );
+    this.logger.info(`${this.serviceName}: Circuit OPENED after ${this.failureCount} failures`);
   }
 
   private shouldAttemptReset(): boolean {
@@ -206,7 +208,7 @@ export class CircuitBreaker {
     this.successCount = 0;
     this.nextAttempt = undefined;
     
-    console.log(`[CircuitBreaker] ${this.serviceName}: Circuit CLOSED - service recovered`);
+    this.logger.info(`${this.serviceName}: Circuit CLOSED - service recovered`);
   }
 
   private resetFailureCount(): void {
