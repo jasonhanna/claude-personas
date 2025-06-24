@@ -4,6 +4,7 @@ import * as fs from 'fs/promises';
 import { EventEmitter } from 'events';
 import { PersonaLoader } from './persona-loader.js';
 import { PersonaConfig, AgentMessage } from './base-agent-server.js';
+import { ResourceRegistry } from './resource-registry.js';
 
 // Security validation utilities
 class ProcessSecurity {
@@ -67,6 +68,8 @@ interface AgentProcess {
   process: ChildProcess;
   status: 'starting' | 'running' | 'stopped' | 'error';
   port?: number;
+  logHandle?: fs.FileHandle;
+  resourceId?: string;
 }
 
 export class AgentOrchestrator extends EventEmitter {
@@ -75,6 +78,7 @@ export class AgentOrchestrator extends EventEmitter {
   private workingDir: string;
   private messageRouter: MessageRouter;
   private basePort: number = 3000;
+  private resourceRegistry = new ResourceRegistry('AgentOrchestrator');
 
   constructor(workingDir: string) {
     super();
@@ -157,11 +161,39 @@ agent.start().catch(console.error);
       stdio: ['pipe', 'pipe', 'pipe', 'ipc']
     });
 
+    // Log agent output with validated path
+    const logPath = ProcessSecurity.validatePath(
+      path.join(this.workingDir, 'logs', `${personaRole}.log`),
+      this.workingDir
+    );
+    const logStream = await fs.open(logPath, 'a');
+
+    // Register process and log handle in ResourceRegistry
+    const resourceId = this.resourceRegistry.registerProcess(agentProcess, {
+      name: `agent-${personaRole}`,
+      component: 'AgentOrchestrator'
+    });
+
+    // Register log handle for cleanup
+    this.resourceRegistry.registerResource(
+      logStream,
+      async () => {
+        try {
+          await logStream.close();
+        } catch (error) {
+          console.warn(`Failed to close log file for ${personaRole}:`, error);
+        }
+      },
+      { name: `log-${personaRole}`, component: 'AgentOrchestrator' }
+    );
+
     const agent: AgentProcess = {
       persona,
       process: agentProcess,
       status: 'starting',
-      port: this.basePort++
+      port: this.basePort++,
+      logHandle: logStream,
+      resourceId
     };
 
     this.agents.set(personaRole, agent);
@@ -173,19 +205,31 @@ agent.start().catch(console.error);
       this.emit('agent:error', { role: personaRole, error });
     });
 
-    agentProcess.on('exit', (code) => {
+    agentProcess.on('exit', async (code) => {
       console.log(`Agent ${personaRole} exited with code ${code}`);
       agent.status = 'stopped';
+      
+      // Clean up agent resources
+      if (agent.resourceId) {
+        try {
+          await this.resourceRegistry.unregister(agent.resourceId);
+        } catch (error) {
+          console.warn(`Failed to cleanup resources for ${personaRole}:`, error);
+        }
+      }
+      
+      // Clean up log handle
+      if (agent.logHandle) {
+        try {
+          await agent.logHandle.close();
+        } catch (error) {
+          console.warn(`Failed to close log handle for ${personaRole}:`, error);
+        }
+      }
+      
       this.agents.delete(personaRole);
       this.emit('agent:stopped', { role: personaRole, code });
     });
-
-    // Log agent output with validated path
-    const logPath = ProcessSecurity.validatePath(
-      path.join(this.workingDir, 'logs', `${personaRole}.log`),
-      this.workingDir
-    );
-    const logStream = await fs.open(logPath, 'a');
 
     agentProcess.stdout?.on('data', async (data) => {
       await logStream.write(`[${new Date().toISOString()}] ${data}`);
@@ -214,20 +258,50 @@ agent.start().catch(console.error);
       return;
     }
 
-    agent.process.kill('SIGTERM');
-    
-    // Wait for graceful shutdown
-    await new Promise<void>((resolve) => {
-      const timeout = setTimeout(() => {
-        agent.process.kill('SIGKILL');
-        resolve();
-      }, 5000);
+    // Clean up agent resources immediately
+    if (agent.resourceId) {
+      try {
+        await this.resourceRegistry.unregister(agent.resourceId);
+      } catch (error) {
+        console.warn(`Failed to cleanup resources for ${personaRole}:`, error);
+      }
+    }
 
-      agent.process.on('exit', () => {
-        clearTimeout(timeout);
-        resolve();
+    // Close log handle
+    if (agent.logHandle) {
+      try {
+        await agent.logHandle.close();
+      } catch (error) {
+        console.warn(`Failed to close log handle for ${personaRole}:`, error);
+      }
+    }
+
+    // Attempt graceful shutdown first
+    if (!agent.process.killed) {
+      agent.process.kill('SIGTERM');
+      
+      // Wait for graceful shutdown with timeout
+      await new Promise<void>((resolve) => {
+        const timeout = setTimeout(() => {
+          if (!agent.process.killed) {
+            console.warn(`Force killing agent ${personaRole} after timeout`);
+            agent.process.kill('SIGKILL');
+          }
+          resolve();
+        }, 5000);
+
+        const onExit = () => {
+          clearTimeout(timeout);
+          agent.process.removeListener('exit', onExit);
+          resolve();
+        };
+
+        agent.process.once('exit', onExit);
       });
-    });
+    }
+
+    // Ensure cleanup
+    this.agents.delete(personaRole);
   }
 
   async stopAllAgents(): Promise<void> {
@@ -235,6 +309,21 @@ agent.start().catch(console.error);
       this.stopAgent(role)
     );
     await Promise.all(stopPromises);
+  }
+
+  async shutdown(): Promise<void> {
+    try {
+      // Stop all agents first
+      await this.stopAllAgents();
+      
+      // Clean up any remaining resources
+      await this.resourceRegistry.cleanup();
+      
+      console.log('AgentOrchestrator shutdown completed');
+    } catch (error) {
+      console.error('Error during orchestrator shutdown:', error);
+      throw error;
+    }
   }
 
   async broadcastMessage(message: Omit<AgentMessage, 'timestamp'>): Promise<void> {

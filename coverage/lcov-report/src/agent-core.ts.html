@@ -1,0 +1,1684 @@
+
+<!doctype html>
+<html lang="en">
+
+<head>
+    <title>Code coverage report for src/agent-core.ts</title>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="../prettify.css" />
+    <link rel="stylesheet" href="../base.css" />
+    <link rel="shortcut icon" type="image/x-icon" href="../favicon.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style type='text/css'>
+        .coverage-summary .sorter {
+            background-image: url(../sort-arrow-sprite.png);
+        }
+    </style>
+</head>
+    
+<body>
+<div class='wrapper'>
+    <div class='pad1'>
+        <h1><a href="../index.html">All files</a> / <a href="index.html">src</a> agent-core.ts</h1>
+        <div class='clearfix'>
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">0.65% </span>
+                <span class="quiet">Statements</span>
+                <span class='fraction'>2/305</span>
+            </div>
+        
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">0% </span>
+                <span class="quiet">Branches</span>
+                <span class='fraction'>0/51</span>
+            </div>
+        
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">0% </span>
+                <span class="quiet">Functions</span>
+                <span class='fraction'>0/10</span>
+            </div>
+        
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">0.65% </span>
+                <span class="quiet">Lines</span>
+                <span class='fraction'>2/304</span>
+            </div>
+        
+            
+        </div>
+        <p class="quiet">
+            Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>, <em>p</em> or <em>k</em> for the previous block.
+        </p>
+        <template id="filterTemplate">
+            <div class="quiet">
+                Filter:
+                <input type="search" id="fileSearch">
+            </div>
+        </template>
+    </div>
+    <div class='status-line low'></div>
+    <pre><table class="coverage">
+<tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
+<a name='L2'></a><a href='#L2'>2</a>
+<a name='L3'></a><a href='#L3'>3</a>
+<a name='L4'></a><a href='#L4'>4</a>
+<a name='L5'></a><a href='#L5'>5</a>
+<a name='L6'></a><a href='#L6'>6</a>
+<a name='L7'></a><a href='#L7'>7</a>
+<a name='L8'></a><a href='#L8'>8</a>
+<a name='L9'></a><a href='#L9'>9</a>
+<a name='L10'></a><a href='#L10'>10</a>
+<a name='L11'></a><a href='#L11'>11</a>
+<a name='L12'></a><a href='#L12'>12</a>
+<a name='L13'></a><a href='#L13'>13</a>
+<a name='L14'></a><a href='#L14'>14</a>
+<a name='L15'></a><a href='#L15'>15</a>
+<a name='L16'></a><a href='#L16'>16</a>
+<a name='L17'></a><a href='#L17'>17</a>
+<a name='L18'></a><a href='#L18'>18</a>
+<a name='L19'></a><a href='#L19'>19</a>
+<a name='L20'></a><a href='#L20'>20</a>
+<a name='L21'></a><a href='#L21'>21</a>
+<a name='L22'></a><a href='#L22'>22</a>
+<a name='L23'></a><a href='#L23'>23</a>
+<a name='L24'></a><a href='#L24'>24</a>
+<a name='L25'></a><a href='#L25'>25</a>
+<a name='L26'></a><a href='#L26'>26</a>
+<a name='L27'></a><a href='#L27'>27</a>
+<a name='L28'></a><a href='#L28'>28</a>
+<a name='L29'></a><a href='#L29'>29</a>
+<a name='L30'></a><a href='#L30'>30</a>
+<a name='L31'></a><a href='#L31'>31</a>
+<a name='L32'></a><a href='#L32'>32</a>
+<a name='L33'></a><a href='#L33'>33</a>
+<a name='L34'></a><a href='#L34'>34</a>
+<a name='L35'></a><a href='#L35'>35</a>
+<a name='L36'></a><a href='#L36'>36</a>
+<a name='L37'></a><a href='#L37'>37</a>
+<a name='L38'></a><a href='#L38'>38</a>
+<a name='L39'></a><a href='#L39'>39</a>
+<a name='L40'></a><a href='#L40'>40</a>
+<a name='L41'></a><a href='#L41'>41</a>
+<a name='L42'></a><a href='#L42'>42</a>
+<a name='L43'></a><a href='#L43'>43</a>
+<a name='L44'></a><a href='#L44'>44</a>
+<a name='L45'></a><a href='#L45'>45</a>
+<a name='L46'></a><a href='#L46'>46</a>
+<a name='L47'></a><a href='#L47'>47</a>
+<a name='L48'></a><a href='#L48'>48</a>
+<a name='L49'></a><a href='#L49'>49</a>
+<a name='L50'></a><a href='#L50'>50</a>
+<a name='L51'></a><a href='#L51'>51</a>
+<a name='L52'></a><a href='#L52'>52</a>
+<a name='L53'></a><a href='#L53'>53</a>
+<a name='L54'></a><a href='#L54'>54</a>
+<a name='L55'></a><a href='#L55'>55</a>
+<a name='L56'></a><a href='#L56'>56</a>
+<a name='L57'></a><a href='#L57'>57</a>
+<a name='L58'></a><a href='#L58'>58</a>
+<a name='L59'></a><a href='#L59'>59</a>
+<a name='L60'></a><a href='#L60'>60</a>
+<a name='L61'></a><a href='#L61'>61</a>
+<a name='L62'></a><a href='#L62'>62</a>
+<a name='L63'></a><a href='#L63'>63</a>
+<a name='L64'></a><a href='#L64'>64</a>
+<a name='L65'></a><a href='#L65'>65</a>
+<a name='L66'></a><a href='#L66'>66</a>
+<a name='L67'></a><a href='#L67'>67</a>
+<a name='L68'></a><a href='#L68'>68</a>
+<a name='L69'></a><a href='#L69'>69</a>
+<a name='L70'></a><a href='#L70'>70</a>
+<a name='L71'></a><a href='#L71'>71</a>
+<a name='L72'></a><a href='#L72'>72</a>
+<a name='L73'></a><a href='#L73'>73</a>
+<a name='L74'></a><a href='#L74'>74</a>
+<a name='L75'></a><a href='#L75'>75</a>
+<a name='L76'></a><a href='#L76'>76</a>
+<a name='L77'></a><a href='#L77'>77</a>
+<a name='L78'></a><a href='#L78'>78</a>
+<a name='L79'></a><a href='#L79'>79</a>
+<a name='L80'></a><a href='#L80'>80</a>
+<a name='L81'></a><a href='#L81'>81</a>
+<a name='L82'></a><a href='#L82'>82</a>
+<a name='L83'></a><a href='#L83'>83</a>
+<a name='L84'></a><a href='#L84'>84</a>
+<a name='L85'></a><a href='#L85'>85</a>
+<a name='L86'></a><a href='#L86'>86</a>
+<a name='L87'></a><a href='#L87'>87</a>
+<a name='L88'></a><a href='#L88'>88</a>
+<a name='L89'></a><a href='#L89'>89</a>
+<a name='L90'></a><a href='#L90'>90</a>
+<a name='L91'></a><a href='#L91'>91</a>
+<a name='L92'></a><a href='#L92'>92</a>
+<a name='L93'></a><a href='#L93'>93</a>
+<a name='L94'></a><a href='#L94'>94</a>
+<a name='L95'></a><a href='#L95'>95</a>
+<a name='L96'></a><a href='#L96'>96</a>
+<a name='L97'></a><a href='#L97'>97</a>
+<a name='L98'></a><a href='#L98'>98</a>
+<a name='L99'></a><a href='#L99'>99</a>
+<a name='L100'></a><a href='#L100'>100</a>
+<a name='L101'></a><a href='#L101'>101</a>
+<a name='L102'></a><a href='#L102'>102</a>
+<a name='L103'></a><a href='#L103'>103</a>
+<a name='L104'></a><a href='#L104'>104</a>
+<a name='L105'></a><a href='#L105'>105</a>
+<a name='L106'></a><a href='#L106'>106</a>
+<a name='L107'></a><a href='#L107'>107</a>
+<a name='L108'></a><a href='#L108'>108</a>
+<a name='L109'></a><a href='#L109'>109</a>
+<a name='L110'></a><a href='#L110'>110</a>
+<a name='L111'></a><a href='#L111'>111</a>
+<a name='L112'></a><a href='#L112'>112</a>
+<a name='L113'></a><a href='#L113'>113</a>
+<a name='L114'></a><a href='#L114'>114</a>
+<a name='L115'></a><a href='#L115'>115</a>
+<a name='L116'></a><a href='#L116'>116</a>
+<a name='L117'></a><a href='#L117'>117</a>
+<a name='L118'></a><a href='#L118'>118</a>
+<a name='L119'></a><a href='#L119'>119</a>
+<a name='L120'></a><a href='#L120'>120</a>
+<a name='L121'></a><a href='#L121'>121</a>
+<a name='L122'></a><a href='#L122'>122</a>
+<a name='L123'></a><a href='#L123'>123</a>
+<a name='L124'></a><a href='#L124'>124</a>
+<a name='L125'></a><a href='#L125'>125</a>
+<a name='L126'></a><a href='#L126'>126</a>
+<a name='L127'></a><a href='#L127'>127</a>
+<a name='L128'></a><a href='#L128'>128</a>
+<a name='L129'></a><a href='#L129'>129</a>
+<a name='L130'></a><a href='#L130'>130</a>
+<a name='L131'></a><a href='#L131'>131</a>
+<a name='L132'></a><a href='#L132'>132</a>
+<a name='L133'></a><a href='#L133'>133</a>
+<a name='L134'></a><a href='#L134'>134</a>
+<a name='L135'></a><a href='#L135'>135</a>
+<a name='L136'></a><a href='#L136'>136</a>
+<a name='L137'></a><a href='#L137'>137</a>
+<a name='L138'></a><a href='#L138'>138</a>
+<a name='L139'></a><a href='#L139'>139</a>
+<a name='L140'></a><a href='#L140'>140</a>
+<a name='L141'></a><a href='#L141'>141</a>
+<a name='L142'></a><a href='#L142'>142</a>
+<a name='L143'></a><a href='#L143'>143</a>
+<a name='L144'></a><a href='#L144'>144</a>
+<a name='L145'></a><a href='#L145'>145</a>
+<a name='L146'></a><a href='#L146'>146</a>
+<a name='L147'></a><a href='#L147'>147</a>
+<a name='L148'></a><a href='#L148'>148</a>
+<a name='L149'></a><a href='#L149'>149</a>
+<a name='L150'></a><a href='#L150'>150</a>
+<a name='L151'></a><a href='#L151'>151</a>
+<a name='L152'></a><a href='#L152'>152</a>
+<a name='L153'></a><a href='#L153'>153</a>
+<a name='L154'></a><a href='#L154'>154</a>
+<a name='L155'></a><a href='#L155'>155</a>
+<a name='L156'></a><a href='#L156'>156</a>
+<a name='L157'></a><a href='#L157'>157</a>
+<a name='L158'></a><a href='#L158'>158</a>
+<a name='L159'></a><a href='#L159'>159</a>
+<a name='L160'></a><a href='#L160'>160</a>
+<a name='L161'></a><a href='#L161'>161</a>
+<a name='L162'></a><a href='#L162'>162</a>
+<a name='L163'></a><a href='#L163'>163</a>
+<a name='L164'></a><a href='#L164'>164</a>
+<a name='L165'></a><a href='#L165'>165</a>
+<a name='L166'></a><a href='#L166'>166</a>
+<a name='L167'></a><a href='#L167'>167</a>
+<a name='L168'></a><a href='#L168'>168</a>
+<a name='L169'></a><a href='#L169'>169</a>
+<a name='L170'></a><a href='#L170'>170</a>
+<a name='L171'></a><a href='#L171'>171</a>
+<a name='L172'></a><a href='#L172'>172</a>
+<a name='L173'></a><a href='#L173'>173</a>
+<a name='L174'></a><a href='#L174'>174</a>
+<a name='L175'></a><a href='#L175'>175</a>
+<a name='L176'></a><a href='#L176'>176</a>
+<a name='L177'></a><a href='#L177'>177</a>
+<a name='L178'></a><a href='#L178'>178</a>
+<a name='L179'></a><a href='#L179'>179</a>
+<a name='L180'></a><a href='#L180'>180</a>
+<a name='L181'></a><a href='#L181'>181</a>
+<a name='L182'></a><a href='#L182'>182</a>
+<a name='L183'></a><a href='#L183'>183</a>
+<a name='L184'></a><a href='#L184'>184</a>
+<a name='L185'></a><a href='#L185'>185</a>
+<a name='L186'></a><a href='#L186'>186</a>
+<a name='L187'></a><a href='#L187'>187</a>
+<a name='L188'></a><a href='#L188'>188</a>
+<a name='L189'></a><a href='#L189'>189</a>
+<a name='L190'></a><a href='#L190'>190</a>
+<a name='L191'></a><a href='#L191'>191</a>
+<a name='L192'></a><a href='#L192'>192</a>
+<a name='L193'></a><a href='#L193'>193</a>
+<a name='L194'></a><a href='#L194'>194</a>
+<a name='L195'></a><a href='#L195'>195</a>
+<a name='L196'></a><a href='#L196'>196</a>
+<a name='L197'></a><a href='#L197'>197</a>
+<a name='L198'></a><a href='#L198'>198</a>
+<a name='L199'></a><a href='#L199'>199</a>
+<a name='L200'></a><a href='#L200'>200</a>
+<a name='L201'></a><a href='#L201'>201</a>
+<a name='L202'></a><a href='#L202'>202</a>
+<a name='L203'></a><a href='#L203'>203</a>
+<a name='L204'></a><a href='#L204'>204</a>
+<a name='L205'></a><a href='#L205'>205</a>
+<a name='L206'></a><a href='#L206'>206</a>
+<a name='L207'></a><a href='#L207'>207</a>
+<a name='L208'></a><a href='#L208'>208</a>
+<a name='L209'></a><a href='#L209'>209</a>
+<a name='L210'></a><a href='#L210'>210</a>
+<a name='L211'></a><a href='#L211'>211</a>
+<a name='L212'></a><a href='#L212'>212</a>
+<a name='L213'></a><a href='#L213'>213</a>
+<a name='L214'></a><a href='#L214'>214</a>
+<a name='L215'></a><a href='#L215'>215</a>
+<a name='L216'></a><a href='#L216'>216</a>
+<a name='L217'></a><a href='#L217'>217</a>
+<a name='L218'></a><a href='#L218'>218</a>
+<a name='L219'></a><a href='#L219'>219</a>
+<a name='L220'></a><a href='#L220'>220</a>
+<a name='L221'></a><a href='#L221'>221</a>
+<a name='L222'></a><a href='#L222'>222</a>
+<a name='L223'></a><a href='#L223'>223</a>
+<a name='L224'></a><a href='#L224'>224</a>
+<a name='L225'></a><a href='#L225'>225</a>
+<a name='L226'></a><a href='#L226'>226</a>
+<a name='L227'></a><a href='#L227'>227</a>
+<a name='L228'></a><a href='#L228'>228</a>
+<a name='L229'></a><a href='#L229'>229</a>
+<a name='L230'></a><a href='#L230'>230</a>
+<a name='L231'></a><a href='#L231'>231</a>
+<a name='L232'></a><a href='#L232'>232</a>
+<a name='L233'></a><a href='#L233'>233</a>
+<a name='L234'></a><a href='#L234'>234</a>
+<a name='L235'></a><a href='#L235'>235</a>
+<a name='L236'></a><a href='#L236'>236</a>
+<a name='L237'></a><a href='#L237'>237</a>
+<a name='L238'></a><a href='#L238'>238</a>
+<a name='L239'></a><a href='#L239'>239</a>
+<a name='L240'></a><a href='#L240'>240</a>
+<a name='L241'></a><a href='#L241'>241</a>
+<a name='L242'></a><a href='#L242'>242</a>
+<a name='L243'></a><a href='#L243'>243</a>
+<a name='L244'></a><a href='#L244'>244</a>
+<a name='L245'></a><a href='#L245'>245</a>
+<a name='L246'></a><a href='#L246'>246</a>
+<a name='L247'></a><a href='#L247'>247</a>
+<a name='L248'></a><a href='#L248'>248</a>
+<a name='L249'></a><a href='#L249'>249</a>
+<a name='L250'></a><a href='#L250'>250</a>
+<a name='L251'></a><a href='#L251'>251</a>
+<a name='L252'></a><a href='#L252'>252</a>
+<a name='L253'></a><a href='#L253'>253</a>
+<a name='L254'></a><a href='#L254'>254</a>
+<a name='L255'></a><a href='#L255'>255</a>
+<a name='L256'></a><a href='#L256'>256</a>
+<a name='L257'></a><a href='#L257'>257</a>
+<a name='L258'></a><a href='#L258'>258</a>
+<a name='L259'></a><a href='#L259'>259</a>
+<a name='L260'></a><a href='#L260'>260</a>
+<a name='L261'></a><a href='#L261'>261</a>
+<a name='L262'></a><a href='#L262'>262</a>
+<a name='L263'></a><a href='#L263'>263</a>
+<a name='L264'></a><a href='#L264'>264</a>
+<a name='L265'></a><a href='#L265'>265</a>
+<a name='L266'></a><a href='#L266'>266</a>
+<a name='L267'></a><a href='#L267'>267</a>
+<a name='L268'></a><a href='#L268'>268</a>
+<a name='L269'></a><a href='#L269'>269</a>
+<a name='L270'></a><a href='#L270'>270</a>
+<a name='L271'></a><a href='#L271'>271</a>
+<a name='L272'></a><a href='#L272'>272</a>
+<a name='L273'></a><a href='#L273'>273</a>
+<a name='L274'></a><a href='#L274'>274</a>
+<a name='L275'></a><a href='#L275'>275</a>
+<a name='L276'></a><a href='#L276'>276</a>
+<a name='L277'></a><a href='#L277'>277</a>
+<a name='L278'></a><a href='#L278'>278</a>
+<a name='L279'></a><a href='#L279'>279</a>
+<a name='L280'></a><a href='#L280'>280</a>
+<a name='L281'></a><a href='#L281'>281</a>
+<a name='L282'></a><a href='#L282'>282</a>
+<a name='L283'></a><a href='#L283'>283</a>
+<a name='L284'></a><a href='#L284'>284</a>
+<a name='L285'></a><a href='#L285'>285</a>
+<a name='L286'></a><a href='#L286'>286</a>
+<a name='L287'></a><a href='#L287'>287</a>
+<a name='L288'></a><a href='#L288'>288</a>
+<a name='L289'></a><a href='#L289'>289</a>
+<a name='L290'></a><a href='#L290'>290</a>
+<a name='L291'></a><a href='#L291'>291</a>
+<a name='L292'></a><a href='#L292'>292</a>
+<a name='L293'></a><a href='#L293'>293</a>
+<a name='L294'></a><a href='#L294'>294</a>
+<a name='L295'></a><a href='#L295'>295</a>
+<a name='L296'></a><a href='#L296'>296</a>
+<a name='L297'></a><a href='#L297'>297</a>
+<a name='L298'></a><a href='#L298'>298</a>
+<a name='L299'></a><a href='#L299'>299</a>
+<a name='L300'></a><a href='#L300'>300</a>
+<a name='L301'></a><a href='#L301'>301</a>
+<a name='L302'></a><a href='#L302'>302</a>
+<a name='L303'></a><a href='#L303'>303</a>
+<a name='L304'></a><a href='#L304'>304</a>
+<a name='L305'></a><a href='#L305'>305</a>
+<a name='L306'></a><a href='#L306'>306</a>
+<a name='L307'></a><a href='#L307'>307</a>
+<a name='L308'></a><a href='#L308'>308</a>
+<a name='L309'></a><a href='#L309'>309</a>
+<a name='L310'></a><a href='#L310'>310</a>
+<a name='L311'></a><a href='#L311'>311</a>
+<a name='L312'></a><a href='#L312'>312</a>
+<a name='L313'></a><a href='#L313'>313</a>
+<a name='L314'></a><a href='#L314'>314</a>
+<a name='L315'></a><a href='#L315'>315</a>
+<a name='L316'></a><a href='#L316'>316</a>
+<a name='L317'></a><a href='#L317'>317</a>
+<a name='L318'></a><a href='#L318'>318</a>
+<a name='L319'></a><a href='#L319'>319</a>
+<a name='L320'></a><a href='#L320'>320</a>
+<a name='L321'></a><a href='#L321'>321</a>
+<a name='L322'></a><a href='#L322'>322</a>
+<a name='L323'></a><a href='#L323'>323</a>
+<a name='L324'></a><a href='#L324'>324</a>
+<a name='L325'></a><a href='#L325'>325</a>
+<a name='L326'></a><a href='#L326'>326</a>
+<a name='L327'></a><a href='#L327'>327</a>
+<a name='L328'></a><a href='#L328'>328</a>
+<a name='L329'></a><a href='#L329'>329</a>
+<a name='L330'></a><a href='#L330'>330</a>
+<a name='L331'></a><a href='#L331'>331</a>
+<a name='L332'></a><a href='#L332'>332</a>
+<a name='L333'></a><a href='#L333'>333</a>
+<a name='L334'></a><a href='#L334'>334</a>
+<a name='L335'></a><a href='#L335'>335</a>
+<a name='L336'></a><a href='#L336'>336</a>
+<a name='L337'></a><a href='#L337'>337</a>
+<a name='L338'></a><a href='#L338'>338</a>
+<a name='L339'></a><a href='#L339'>339</a>
+<a name='L340'></a><a href='#L340'>340</a>
+<a name='L341'></a><a href='#L341'>341</a>
+<a name='L342'></a><a href='#L342'>342</a>
+<a name='L343'></a><a href='#L343'>343</a>
+<a name='L344'></a><a href='#L344'>344</a>
+<a name='L345'></a><a href='#L345'>345</a>
+<a name='L346'></a><a href='#L346'>346</a>
+<a name='L347'></a><a href='#L347'>347</a>
+<a name='L348'></a><a href='#L348'>348</a>
+<a name='L349'></a><a href='#L349'>349</a>
+<a name='L350'></a><a href='#L350'>350</a>
+<a name='L351'></a><a href='#L351'>351</a>
+<a name='L352'></a><a href='#L352'>352</a>
+<a name='L353'></a><a href='#L353'>353</a>
+<a name='L354'></a><a href='#L354'>354</a>
+<a name='L355'></a><a href='#L355'>355</a>
+<a name='L356'></a><a href='#L356'>356</a>
+<a name='L357'></a><a href='#L357'>357</a>
+<a name='L358'></a><a href='#L358'>358</a>
+<a name='L359'></a><a href='#L359'>359</a>
+<a name='L360'></a><a href='#L360'>360</a>
+<a name='L361'></a><a href='#L361'>361</a>
+<a name='L362'></a><a href='#L362'>362</a>
+<a name='L363'></a><a href='#L363'>363</a>
+<a name='L364'></a><a href='#L364'>364</a>
+<a name='L365'></a><a href='#L365'>365</a>
+<a name='L366'></a><a href='#L366'>366</a>
+<a name='L367'></a><a href='#L367'>367</a>
+<a name='L368'></a><a href='#L368'>368</a>
+<a name='L369'></a><a href='#L369'>369</a>
+<a name='L370'></a><a href='#L370'>370</a>
+<a name='L371'></a><a href='#L371'>371</a>
+<a name='L372'></a><a href='#L372'>372</a>
+<a name='L373'></a><a href='#L373'>373</a>
+<a name='L374'></a><a href='#L374'>374</a>
+<a name='L375'></a><a href='#L375'>375</a>
+<a name='L376'></a><a href='#L376'>376</a>
+<a name='L377'></a><a href='#L377'>377</a>
+<a name='L378'></a><a href='#L378'>378</a>
+<a name='L379'></a><a href='#L379'>379</a>
+<a name='L380'></a><a href='#L380'>380</a>
+<a name='L381'></a><a href='#L381'>381</a>
+<a name='L382'></a><a href='#L382'>382</a>
+<a name='L383'></a><a href='#L383'>383</a>
+<a name='L384'></a><a href='#L384'>384</a>
+<a name='L385'></a><a href='#L385'>385</a>
+<a name='L386'></a><a href='#L386'>386</a>
+<a name='L387'></a><a href='#L387'>387</a>
+<a name='L388'></a><a href='#L388'>388</a>
+<a name='L389'></a><a href='#L389'>389</a>
+<a name='L390'></a><a href='#L390'>390</a>
+<a name='L391'></a><a href='#L391'>391</a>
+<a name='L392'></a><a href='#L392'>392</a>
+<a name='L393'></a><a href='#L393'>393</a>
+<a name='L394'></a><a href='#L394'>394</a>
+<a name='L395'></a><a href='#L395'>395</a>
+<a name='L396'></a><a href='#L396'>396</a>
+<a name='L397'></a><a href='#L397'>397</a>
+<a name='L398'></a><a href='#L398'>398</a>
+<a name='L399'></a><a href='#L399'>399</a>
+<a name='L400'></a><a href='#L400'>400</a>
+<a name='L401'></a><a href='#L401'>401</a>
+<a name='L402'></a><a href='#L402'>402</a>
+<a name='L403'></a><a href='#L403'>403</a>
+<a name='L404'></a><a href='#L404'>404</a>
+<a name='L405'></a><a href='#L405'>405</a>
+<a name='L406'></a><a href='#L406'>406</a>
+<a name='L407'></a><a href='#L407'>407</a>
+<a name='L408'></a><a href='#L408'>408</a>
+<a name='L409'></a><a href='#L409'>409</a>
+<a name='L410'></a><a href='#L410'>410</a>
+<a name='L411'></a><a href='#L411'>411</a>
+<a name='L412'></a><a href='#L412'>412</a>
+<a name='L413'></a><a href='#L413'>413</a>
+<a name='L414'></a><a href='#L414'>414</a>
+<a name='L415'></a><a href='#L415'>415</a>
+<a name='L416'></a><a href='#L416'>416</a>
+<a name='L417'></a><a href='#L417'>417</a>
+<a name='L418'></a><a href='#L418'>418</a>
+<a name='L419'></a><a href='#L419'>419</a>
+<a name='L420'></a><a href='#L420'>420</a>
+<a name='L421'></a><a href='#L421'>421</a>
+<a name='L422'></a><a href='#L422'>422</a>
+<a name='L423'></a><a href='#L423'>423</a>
+<a name='L424'></a><a href='#L424'>424</a>
+<a name='L425'></a><a href='#L425'>425</a>
+<a name='L426'></a><a href='#L426'>426</a>
+<a name='L427'></a><a href='#L427'>427</a>
+<a name='L428'></a><a href='#L428'>428</a>
+<a name='L429'></a><a href='#L429'>429</a>
+<a name='L430'></a><a href='#L430'>430</a>
+<a name='L431'></a><a href='#L431'>431</a>
+<a name='L432'></a><a href='#L432'>432</a>
+<a name='L433'></a><a href='#L433'>433</a>
+<a name='L434'></a><a href='#L434'>434</a>
+<a name='L435'></a><a href='#L435'>435</a>
+<a name='L436'></a><a href='#L436'>436</a>
+<a name='L437'></a><a href='#L437'>437</a>
+<a name='L438'></a><a href='#L438'>438</a>
+<a name='L439'></a><a href='#L439'>439</a>
+<a name='L440'></a><a href='#L440'>440</a>
+<a name='L441'></a><a href='#L441'>441</a>
+<a name='L442'></a><a href='#L442'>442</a>
+<a name='L443'></a><a href='#L443'>443</a>
+<a name='L444'></a><a href='#L444'>444</a>
+<a name='L445'></a><a href='#L445'>445</a>
+<a name='L446'></a><a href='#L446'>446</a>
+<a name='L447'></a><a href='#L447'>447</a>
+<a name='L448'></a><a href='#L448'>448</a>
+<a name='L449'></a><a href='#L449'>449</a>
+<a name='L450'></a><a href='#L450'>450</a>
+<a name='L451'></a><a href='#L451'>451</a>
+<a name='L452'></a><a href='#L452'>452</a>
+<a name='L453'></a><a href='#L453'>453</a>
+<a name='L454'></a><a href='#L454'>454</a>
+<a name='L455'></a><a href='#L455'>455</a>
+<a name='L456'></a><a href='#L456'>456</a>
+<a name='L457'></a><a href='#L457'>457</a>
+<a name='L458'></a><a href='#L458'>458</a>
+<a name='L459'></a><a href='#L459'>459</a>
+<a name='L460'></a><a href='#L460'>460</a>
+<a name='L461'></a><a href='#L461'>461</a>
+<a name='L462'></a><a href='#L462'>462</a>
+<a name='L463'></a><a href='#L463'>463</a>
+<a name='L464'></a><a href='#L464'>464</a>
+<a name='L465'></a><a href='#L465'>465</a>
+<a name='L466'></a><a href='#L466'>466</a>
+<a name='L467'></a><a href='#L467'>467</a>
+<a name='L468'></a><a href='#L468'>468</a>
+<a name='L469'></a><a href='#L469'>469</a>
+<a name='L470'></a><a href='#L470'>470</a>
+<a name='L471'></a><a href='#L471'>471</a>
+<a name='L472'></a><a href='#L472'>472</a>
+<a name='L473'></a><a href='#L473'>473</a>
+<a name='L474'></a><a href='#L474'>474</a>
+<a name='L475'></a><a href='#L475'>475</a>
+<a name='L476'></a><a href='#L476'>476</a>
+<a name='L477'></a><a href='#L477'>477</a>
+<a name='L478'></a><a href='#L478'>478</a>
+<a name='L479'></a><a href='#L479'>479</a>
+<a name='L480'></a><a href='#L480'>480</a>
+<a name='L481'></a><a href='#L481'>481</a>
+<a name='L482'></a><a href='#L482'>482</a>
+<a name='L483'></a><a href='#L483'>483</a>
+<a name='L484'></a><a href='#L484'>484</a>
+<a name='L485'></a><a href='#L485'>485</a>
+<a name='L486'></a><a href='#L486'>486</a>
+<a name='L487'></a><a href='#L487'>487</a>
+<a name='L488'></a><a href='#L488'>488</a>
+<a name='L489'></a><a href='#L489'>489</a>
+<a name='L490'></a><a href='#L490'>490</a>
+<a name='L491'></a><a href='#L491'>491</a>
+<a name='L492'></a><a href='#L492'>492</a>
+<a name='L493'></a><a href='#L493'>493</a>
+<a name='L494'></a><a href='#L494'>494</a>
+<a name='L495'></a><a href='#L495'>495</a>
+<a name='L496'></a><a href='#L496'>496</a>
+<a name='L497'></a><a href='#L497'>497</a>
+<a name='L498'></a><a href='#L498'>498</a>
+<a name='L499'></a><a href='#L499'>499</a>
+<a name='L500'></a><a href='#L500'>500</a>
+<a name='L501'></a><a href='#L501'>501</a>
+<a name='L502'></a><a href='#L502'>502</a>
+<a name='L503'></a><a href='#L503'>503</a>
+<a name='L504'></a><a href='#L504'>504</a>
+<a name='L505'></a><a href='#L505'>505</a>
+<a name='L506'></a><a href='#L506'>506</a>
+<a name='L507'></a><a href='#L507'>507</a>
+<a name='L508'></a><a href='#L508'>508</a>
+<a name='L509'></a><a href='#L509'>509</a>
+<a name='L510'></a><a href='#L510'>510</a>
+<a name='L511'></a><a href='#L511'>511</a>
+<a name='L512'></a><a href='#L512'>512</a>
+<a name='L513'></a><a href='#L513'>513</a>
+<a name='L514'></a><a href='#L514'>514</a>
+<a name='L515'></a><a href='#L515'>515</a>
+<a name='L516'></a><a href='#L516'>516</a>
+<a name='L517'></a><a href='#L517'>517</a>
+<a name='L518'></a><a href='#L518'>518</a>
+<a name='L519'></a><a href='#L519'>519</a>
+<a name='L520'></a><a href='#L520'>520</a>
+<a name='L521'></a><a href='#L521'>521</a>
+<a name='L522'></a><a href='#L522'>522</a>
+<a name='L523'></a><a href='#L523'>523</a>
+<a name='L524'></a><a href='#L524'>524</a>
+<a name='L525'></a><a href='#L525'>525</a>
+<a name='L526'></a><a href='#L526'>526</a>
+<a name='L527'></a><a href='#L527'>527</a>
+<a name='L528'></a><a href='#L528'>528</a>
+<a name='L529'></a><a href='#L529'>529</a>
+<a name='L530'></a><a href='#L530'>530</a>
+<a name='L531'></a><a href='#L531'>531</a>
+<a name='L532'></a><a href='#L532'>532</a>
+<a name='L533'></a><a href='#L533'>533</a>
+<a name='L534'></a><a href='#L534'>534</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { PersonaConfig, AgentMessage } from './base-agent-server.js';
+import { MemoryManager } from './memory-manager.js';
+import { execSync } from 'child_process';
+&nbsp;
+export class AgentCore {
+  private persona: PersonaConfig;
+  private memoryManager: MemoryManager;
+  private messageQueue: AgentMessage[] = <span class="cstat-no" title="statement not covered" >[];</span>
+&nbsp;
+<span class="fstat-no" title="function not covered" >  constructor(p</span>ersona: PersonaConfig, memoryManager: MemoryManager) {
+<span class="cstat-no" title="statement not covered" >    this.persona = persona;</span>
+<span class="cstat-no" title="statement not covered" >    this.memoryManager = memoryManager;</span>
+  }
+&nbsp;
+<span class="fstat-no" title="function not covered" >  async </span>getAgentPerspective(task: string, context?: string): Promise&lt;{ content: Array&lt;{ type: string; text: string }&gt; }&gt; {
+    // Log the task to memory
+<span class="cstat-no" title="statement not covered" >    await this.memoryManager.updateMemory(`Task: ${task}${context ? ` (Context: ${context})` : ''}`);</span>
+    
+    // Generate response from the agent's perspective
+    const response = <span class="cstat-no" title="statement not covered" >this.generatePersonaResponse(task, context);</span>
+    
+<span class="cstat-no" title="statement not covered" >    return {</span>
+      content: [{
+        type: "text",
+        text: response
+      }]
+    };
+  }
+&nbsp;
+  private <span class="fstat-no" title="function not covered" >generatePersonaResponse(</span>task: string, context?: string): string {
+    const { name, role, responsibilities, communication_style } = <span class="cstat-no" title="statement not covered" >this.persona;</span>
+    
+    // Engineering Manager specific responses
+<span class="cstat-no" title="statement not covered" >    <span class="missing-if-branch" title="if path not taken" >I</span>if (role === 'engineering-manager') {</span>
+<span class="cstat-no" title="statement not covered" >      <span class="missing-if-branch" title="if path not taken" >I</span>if (task.toLowerCase().includes('introduce')) {</span>
+<span class="cstat-no" title="statement not covered" >        return `Hi, I'm ${name}, your Engineering Manager. I'm here to help with:</span>
+&nbsp;
+• **Architecture &amp; Design**: Reviewing technical decisions and system design
+• **Code Quality**: Ensuring maintainable, scalable code standards
+• **Team Coordination**: Facilitating collaboration and technical planning
+• **Risk Assessment**: Identifying potential technical issues early
+• **Best Practices**: Implementing proven development methodologies
+&nbsp;
+I focus on ${communication_style.focus} with a ${communication_style.tone} approach. I can help you make sound technical decisions while keeping the bigger picture in mind.
+&nbsp;
+${context ? `Given that we're working with a ${context}, I can provide specific guidance on Node.js best practices, Express.js architecture, MongoDB optimization, and authentication security.` : ''}
+&nbsp;
+What technical challenge can I help you tackle?`;
+      }
+      
+      // Handle PR summary requests
+<span class="cstat-no" title="statement not covered" >      <span class="missing-if-branch" title="if path not taken" >I</span>if (task.toLowerCase().includes('summarize') &amp;&amp; (task.toLowerCase().includes('pr') || task.toLowerCase().includes('pull request'))) {</span>
+        // Execute git commands to get PR information
+<span class="cstat-no" title="statement not covered" >        try {</span>
+          // Get the last commit details
+          const lastCommit = <span class="cstat-no" title="statement not covered" >execSync('git log -1 --pretty=format:"%H|%s|%b|%an|%ad"', { encoding: 'utf8' }).trim();</span>
+          const [hash, subject, body, author, date] = <span class="cstat-no" title="statement not covered" >lastCommit.split('|');</span>
+          
+          // Get changed files and stats
+          const changes = <span class="cstat-no" title="statement not covered" >execSync('git show --stat --format="" HEAD', { encoding: 'utf8' }).trim();</span>
+          
+          // Get diff summary
+          const diffSummary = <span class="cstat-no" title="statement not covered" >execSync('git diff HEAD^ HEAD --shortstat', { encoding: 'utf8' }).trim();</span>
+          
+          let summary = <span class="cstat-no" title="statement not covered" >`## PR Summary: ${subject}\n\n`;</span>
+<span class="cstat-no" title="statement not covered" >          summary += `**Author:** ${author}\n`;</span>
+<span class="cstat-no" title="statement not covered" >          summary += `**Date:** ${date}\n`;</span>
+<span class="cstat-no" title="statement not covered" >          summary += `**Commit:** ${hash.substring(0, 7)}\n\n`;</span>
+          
+<span class="cstat-no" title="statement not covered" >          summary += `### Overview\n`;</span>
+<span class="cstat-no" title="statement not covered" >          summary += `${body || 'No detailed description provided.'}\n\n`;</span>
+          
+<span class="cstat-no" title="statement not covered" >          summary += `### Key Changes\n`;</span>
+          
+          // Parse the commit message for key points
+<span class="cstat-no" title="statement not covered" >          <span class="missing-if-branch" title="if path not taken" >I</span>if (subject.toLowerCase().includes('enhanced mcp messaging')) {</span>
+<span class="cstat-no" title="statement not covered" >            summary += `This PR introduces a comprehensive messaging framework for the multi-agent system:\n\n`;</span>
+<span class="cstat-no" title="statement not covered" >            summary += `1. **Enhanced Messaging Framework** - Robust agent-to-agent communication infrastructure\n`;</span>
+<span class="cstat-no" title="statement not covered" >            summary += `2. **ToolManager System** - Role-specific tool registration and dynamic handling\n`;</span>
+<span class="cstat-no" title="statement not covered" >            summary += `3. **Improved BaseAgentServer** - Better logging and tool delegation capabilities\n`;</span>
+<span class="cstat-no" title="statement not covered" >            summary += `4. **Communication Patterns** - Support for sync/async bidirectional messaging\n`;</span>
+<span class="cstat-no" title="statement not covered" >            summary += `5. **Security &amp; Scalability** - Built-in security measures and scalability strategies\n`;</span>
+<span class="cstat-no" title="statement not covered" >            summary += `6. **Backward Compatibility** - Full compatibility with existing MCP interfaces\n\n`;</span>
+          }
+          
+<span class="cstat-no" title="statement not covered" >          summary += `### Technical Details\n`;</span>
+<span class="cstat-no" title="statement not covered" >          summary += `\`\`\`\n${changes}\n\`\`\`\n\n`;</span>
+          
+<span class="cstat-no" title="statement not covered" >          summary += `### Impact\n`;</span>
+<span class="cstat-no" title="statement not covered" >          summary += `${diffSummary}\n\n`;</span>
+          
+<span class="cstat-no" title="statement not covered" >          summary += `### Architecture Decisions\n`;</span>
+<span class="cstat-no" title="statement not covered" >          summary += `- Chose event-driven architecture for loose coupling between agents\n`;</span>
+<span class="cstat-no" title="statement not covered" >          summary += `- Implemented ToolManager for better separation of concerns\n`;</span>
+<span class="cstat-no" title="statement not covered" >          summary += `- Used TypeScript for type safety across the messaging system\n`;</span>
+<span class="cstat-no" title="statement not covered" >          summary += `- Designed for horizontal scalability with message broker pattern\n\n`;</span>
+          
+<span class="cstat-no" title="statement not covered" >          summary += `### Next Steps\n`;</span>
+<span class="cstat-no" title="statement not covered" >          summary += `- Integration testing across all agent types\n`;</span>
+<span class="cstat-no" title="statement not covered" >          summary += `- Performance benchmarking of message throughput\n`;</span>
+<span class="cstat-no" title="statement not covered" >          summary += `- Security audit of the messaging infrastructure\n`;</span>
+          
+<span class="cstat-no" title="statement not covered" >          return summary;</span>
+        } catch (error) {
+<span class="cstat-no" title="statement not covered" >          return `Unable to fetch PR details. Error: ${error instanceof Error ? error.message : String(error)}\n\nPlease ensure you're in a git repository and have proper permissions.`;</span>
+        }
+      }
+      
+      // Enhanced code review logic - analyze the actual context
+<span class="cstat-no" title="statement not covered" >      <span class="missing-if-branch" title="if path not taken" >I</span>if (task.toLowerCase().includes('review') || task.toLowerCase().includes('code')) {</span>
+        // If context contains specific code details, provide targeted feedback
+<span class="cstat-no" title="statement not covered" >        <span class="missing-if-branch" title="if path not taken" >I</span>if (context) {</span>
+          let review = <span class="cstat-no" title="statement not covered" >`As ${name}, I've analyzed the ${task}.\n\n`;</span>
+          
+          // Check for specific patterns in the context
+<span class="cstat-no" title="statement not covered" >          <span class="missing-if-branch" title="if path not taken" >I</span>if (context.includes('error handling') || context.includes('AgentError')) {</span>
+<span class="cstat-no" title="statement not covered" >            review += `**Error Handling Review:**\n\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `✅ **Strengths:**\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `• Custom error hierarchy (AgentError, ValidationError, etc.) provides good error categorization\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `• Structured error context with toJSON() serialization is excellent for debugging\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `• Proper error propagation and cause chaining follows best practices\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `• HTTP status code mapping (400/500) is appropriate\n\n`;</span>
+            
+<span class="cstat-no" title="statement not covered" >            review += `🔍 **Concerns &amp; Recommendations:**\n\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `1. **Security Considerations:**\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `   - Error context might expose sensitive information in production\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `   - Recommendation: Add environment-based error detail filtering\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `   - Consider sanitizing file paths and internal details for external responses\n\n`;</span>
+            
+<span class="cstat-no" title="statement not covered" >            review += `2. **Performance Impact:**\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `   - JSON serialization on every error adds overhead\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `   - Recommendation: Lazy serialization - only serialize when needed\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `   - Consider caching serialized errors for repeated logging\n\n`;</span>
+            
+<span class="cstat-no" title="statement not covered" >            review += `3. **Retry Logic:**\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `   - CommunicationErrors should trigger automatic retries\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `   - Recommendation: Implement exponential backoff with jitter\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `   - Add circuit breaker pattern for repeated failures\n\n`;</span>
+            
+<span class="cstat-no" title="statement not covered" >            review += `4. **Testing Strategy:**\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `   - Need unit tests for each error type\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `   - Integration tests for error propagation through MCP stack\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `   - Recommendation: Add error injection for chaos testing\n\n`;</span>
+            
+<span class="cstat-no" title="statement not covered" >            review += `5. **Code Issues:**\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `   - Fix unused 'req' parameters in http-endpoints.ts\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `   - Consider adding error recovery middleware\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `   - Add request ID tracking for error correlation\n\n`;</span>
+            
+<span class="cstat-no" title="statement not covered" >            review += `**Priority Actions:**\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `1. Add environment-based error filtering (HIGH)\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `2. Implement retry logic for CommunicationErrors (HIGH)\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `3. Fix TypeScript warnings (MEDIUM)\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `4. Add comprehensive error testing suite (MEDIUM)\n`;</span>
+            
+<span class="cstat-no" title="statement not covered" >            return review;</span>
+          }
+          
+          // Multi-agent framework review
+<span class="cstat-no" title="statement not covered" >          <span class="missing-if-branch" title="if path not taken" >I</span>if (context.includes('Multi-Agent') || context.includes('MCP Framework')) {</span>
+<span class="cstat-no" title="statement not covered" >            review += `**Architecture Review - Multi-Agent MCP Framework:**\n\n`;</span>
+            
+<span class="cstat-no" title="statement not covered" >            review += `📋 **Overall Assessment:**\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `The framework shows good separation of concerns with dedicated modules for MCP server, HTTP endpoints, and agent core logic. However, there are several areas that need attention.\n\n`;</span>
+            
+<span class="cstat-no" title="statement not covered" >            review += `🏗️ **Architecture Concerns:**\n\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `1. **BaseAgentServer Complexity (511 lines):**\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `   - This class is doing too much - violates Single Responsibility Principle\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `   - Recommendation: Extract tool handling into a separate ToolManager class\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `   - Move message routing to a dedicated MessageBroker service\n\n`;</span>
+            
+<span class="cstat-no" title="statement not covered" >            review += `2. **Port Allocation Strategy:**\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `   - Hardcoded ports (3001-3003) will cause conflicts in containerized environments\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `   - Recommendation: Use dynamic port allocation with service discovery\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `   - Consider using environment variables for port configuration\n\n`;</span>
+            
+<span class="cstat-no" title="statement not covered" >            review += `3. **Message Queue Architecture:**\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `   - In-memory message queue won't scale beyond single process\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `   - No persistence means message loss on crash\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `   - Recommendation: Integrate Redis or RabbitMQ for reliable messaging\n\n`;</span>
+            
+<span class="cstat-no" title="statement not covered" >            review += `🔒 **Security Issues:**\n\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `1. **Unauthenticated HTTP Endpoints:**\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `   - All endpoints exposed without authentication\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `   - Recommendation: Add JWT-based authentication\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `   - Implement rate limiting to prevent abuse\n\n`;</span>
+            
+<span class="cstat-no" title="statement not covered" >            review += `2. **File System Access:**\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `   - Direct file system operations without sandboxing\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `   - Recommendation: Add path validation and access controls\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `   - Consider using a dedicated storage service\n\n`;</span>
+            
+<span class="cstat-no" title="statement not covered" >            review += `⚡ **Performance Considerations:**\n\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `1. **Synchronous File Operations:**\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `   - Memory persistence uses sync file operations\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `   - Will block event loop under load\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `   - Recommendation: Use async file operations throughout\n\n`;</span>
+            
+<span class="cstat-no" title="statement not covered" >            review += `2. **JSON Parsing Overhead:**\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `   - Frequent JSON parse/stringify for shared knowledge\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `   - Recommendation: Implement caching layer\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `   - Consider using MessagePack for better performance\n\n`;</span>
+            
+<span class="cstat-no" title="statement not covered" >            review += `🧪 **Code Quality:**\n\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `1. **Lack of Tests:**\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `   - No test files visible in the structure\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `   - Recommendation: Aim for 80%+ coverage\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `   - Add integration tests for multi-agent scenarios\n\n`;</span>
+            
+<span class="cstat-no" title="statement not covered" >            review += `2. **Type Safety:**\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `   - Good use of TypeScript interfaces\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `   - Some 'any' types that should be properly typed\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `   - Recommendation: Enable strict TypeScript mode\n\n`;</span>
+            
+<span class="cstat-no" title="statement not covered" >            review += `**Recommended Refactoring Priority:**\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `1. Add authentication and security layer (CRITICAL)\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `2. Refactor BaseAgentServer into smaller components (HIGH)\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `3. Replace in-memory queue with persistent solution (HIGH)\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `4. Add comprehensive test suite (MEDIUM)\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `5. Implement proper logging and monitoring (MEDIUM)\n`;</span>
+            
+<span class="cstat-no" title="statement not covered" >            return review;</span>
+          }
+          
+          // Generic but context-aware review
+<span class="cstat-no" title="statement not covered" >          review += `**Technical Review:**\n\n`;</span>
+<span class="cstat-no" title="statement not covered" >          review += `Based on the provided context, here are my observations:\n\n`;</span>
+          
+          // Extract key technical elements from context
+          const techKeywords = <span class="cstat-no" title="statement not covered" >['TypeScript', 'Node.js', 'Express', 'API', 'database', 'security', 'performance'];</span>
+          const foundTech = <span class="cstat-no" title="statement not covered" >techKeywords.filter(<span class="fstat-no" title="function not covered" >tech </span>=&gt; <span class="cstat-no" title="statement not covered" >context.toLowerCase().includes(tech.toLowerCase()))</span>;</span>
+          
+<span class="cstat-no" title="statement not covered" >          <span class="missing-if-branch" title="if path not taken" >I</span>if (foundTech.length &gt; 0) {</span>
+<span class="cstat-no" title="statement not covered" >            review += `**Technology Stack Considerations:**\n`;</span>
+<span class="cstat-no" title="statement not covered" >            foundTech.forEach(<span class="fstat-no" title="function not covered" >tech </span>=&gt; {</span>
+<span class="cstat-no" title="statement not covered" >              review += `• ${tech}: Ensure best practices are followed\n`;</span>
+            });
+<span class="cstat-no" title="statement not covered" >            review += `\n`;</span>
+          }
+          
+<span class="cstat-no" title="statement not covered" >          review += `**Key Review Areas:**\n`;</span>
+<span class="cstat-no" title="statement not covered" >          review += `1. **Architecture**: Evaluate scalability and maintainability\n`;</span>
+<span class="cstat-no" title="statement not covered" >          review += `2. **Security**: Check for vulnerabilities and access controls\n`;</span>
+<span class="cstat-no" title="statement not covered" >          review += `3. **Performance**: Identify bottlenecks and optimization opportunities\n`;</span>
+<span class="cstat-no" title="statement not covered" >          review += `4. **Code Quality**: Ensure readability and adherence to standards\n`;</span>
+<span class="cstat-no" title="statement not covered" >          review += `5. **Testing**: Verify adequate test coverage\n\n`;</span>
+          
+<span class="cstat-no" title="statement not covered" >          review += `To provide more specific feedback, I would need to see:\n`;</span>
+<span class="cstat-no" title="statement not covered" >          review += `• The actual code implementation\n`;</span>
+<span class="cstat-no" title="statement not covered" >          review += `• System architecture diagrams\n`;</span>
+<span class="cstat-no" title="statement not covered" >          review += `• Performance metrics or requirements\n`;</span>
+<span class="cstat-no" title="statement not covered" >          review += `• Specific areas of concern\n`;</span>
+          
+<span class="cstat-no" title="statement not covered" >          return review;</span>
+        }
+        
+        // Fallback for review requests without context
+<span class="cstat-no" title="statement not covered" >        return `As your Engineering Manager, I need more specific information to provide a meaningful code review.</span>
+&nbsp;
+Please provide:
+• The code or pull request to review
+• Specific areas of concern
+• Any context about recent changes
+• Performance or security requirements
+&nbsp;
+I'll then provide detailed feedback on architecture, security, performance, code quality, and testing.`;
+      }
+      
+      // Handle requests about responsibilities or memory
+<span class="cstat-no" title="statement not covered" >      <span class="missing-if-branch" title="if path not taken" >I</span>if (task.toLowerCase().includes('responsibilities') || task.toLowerCase().includes('memory')) {</span>
+        let response = <span class="cstat-no" title="statement not covered" >`As ${name}, here are my core responsibilities as Engineering Manager:\n\n`;</span>
+<span class="cstat-no" title="statement not covered" >        responsibilities.forEach(<span class="fstat-no" title="function not covered" >(r</span>esp, index) =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >          response += `${index + 1}. **${resp}**\n`;</span>
+        });
+        
+<span class="cstat-no" title="statement not covered" >        response += `\n**My Technical Context:**\n`;</span>
+<span class="cstat-no" title="statement not covered" >        response += `• Microservices architecture with Docker and Kubernetes\n`;</span>
+<span class="cstat-no" title="statement not covered" >        response += `• Trunk-based development with feature flags\n`;</span>
+<span class="cstat-no" title="statement not covered" >        response += `• 80% minimum code coverage requirement\n`;</span>
+<span class="cstat-no" title="statement not covered" >        response += `• TypeScript backend, React frontend\n`;</span>
+<span class="cstat-no" title="statement not covered" >        response += `• API response time SLA: &lt;200ms (95th percentile)\n`;</span>
+<span class="cstat-no" title="statement not covered" >        response += `• 20% sprint allocation for technical debt\n\n`;</span>
+        
+<span class="cstat-no" title="statement not covered" >        response += `I approach these responsibilities with a ${communication_style.tone} style, focusing on ${communication_style.focus}.`;</span>
+        
+<span class="cstat-no" title="statement not covered" >        return response;</span>
+      }
+    }
+    
+    // QA Manager specific responses
+<span class="cstat-no" title="statement not covered" >    <span class="missing-if-branch" title="if path not taken" >I</span>if (role === 'qa-manager') {</span>
+<span class="cstat-no" title="statement not covered" >      <span class="missing-if-branch" title="if path not taken" >I</span>if (task.toLowerCase().includes('introduce')) {</span>
+<span class="cstat-no" title="statement not covered" >        return `Hi, I'm ${name}, your QA Manager. I ensure quality excellence through:</span>
+&nbsp;
+• **Test Strategy**: Comprehensive test planning and execution across all levels
+• **Quality Gates**: Enforcing standards and preventing defects from reaching production
+• **Test Automation**: Building robust, maintainable test frameworks
+• **Risk Management**: Identifying and mitigating quality risks early
+• **Performance &amp; Security**: Ensuring non-functional requirements are met
+• **Metrics &amp; Reporting**: Data-driven insights on quality trends
+&nbsp;
+I take a ${communication_style.tone} approach, focusing on ${communication_style.focus}.
+&nbsp;
+${context ? `For your ${context}, I'll ensure we have appropriate test coverage, performance baselines, and security validations in place.` : ''}
+&nbsp;
+What quality concerns can I help address?`;
+      }
+      
+      // QA review and testing strategy responses
+<span class="cstat-no" title="statement not covered" >      <span class="missing-if-branch" title="if path not taken" >I</span>if (task.toLowerCase().includes('review') || task.toLowerCase().includes('test') || task.toLowerCase().includes('quality')) {</span>
+<span class="cstat-no" title="statement not covered" >        <span class="missing-if-branch" title="if path not taken" >I</span>if (context) {</span>
+          let review = <span class="cstat-no" title="statement not covered" >`As ${name}, I've analyzed the ${task} from a QA perspective.\n\n`;</span>
+          
+          // Error handling specific review
+<span class="cstat-no" title="statement not covered" >          <span class="missing-if-branch" title="if path not taken" >I</span>if (context.includes('error handling') || context.includes('AgentError')) {</span>
+<span class="cstat-no" title="statement not covered" >            review += `**QA Assessment - Error Handling Implementation:**\n\n`;</span>
+            
+<span class="cstat-no" title="statement not covered" >            review += `✅ **Testing Coverage Requirements:**\n\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `1. **Unit Tests (Target: 95% coverage)**\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `   • Test each error class constructor and methods\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `   • Verify error inheritance chain (instanceof checks)\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `   • Test toJSON() serialization for all error types\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `   • Validate error context preservation\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `   • Test error message formatting\n\n`;</span>
+            
+<span class="cstat-no" title="statement not covered" >            review += `2. **Integration Tests:**\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `   • End-to-end error propagation through MCP stack\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `   • HTTP endpoint error responses (status codes, formats)\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `   • Error handling in async operations\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `   • Multi-agent error scenarios\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `   • File system operation failures\n\n`;</span>
+            
+<span class="cstat-no" title="statement not covered" >            review += `🧪 **Edge Cases to Test:**\n\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `1. **Boundary Conditions:**\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `   • Empty/null/undefined inputs to all methods\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `   • Maximum length strings (&gt;10MB for file operations)\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `   • Concurrent access to shared resources\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `   • Network timeouts and interruptions\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `   • Disk space exhaustion scenarios\n\n`;</span>
+            
+<span class="cstat-no" title="statement not covered" >            review += `2. **Error Injection Strategies:**\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `   • Mock file system failures (ENOENT, EACCES, ENOSPC)\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `   • Simulate network failures for agent communication\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `   • Inject malformed JSON for parsing errors\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `   • Force memory allocation failures\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `   • Simulate process crashes during operations\n\n`;</span>
+            
+<span class="cstat-no" title="statement not covered" >            review += `⚡ **Performance Testing Under Errors:**\n\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `1. **Load Testing:**\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `   • Measure throughput with 10% error rate\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `   • Error logging performance (1000 errors/second)\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `   • Memory usage during error storms\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `   • CPU impact of stack trace generation\n\n`;</span>
+            
+<span class="cstat-no" title="statement not covered" >            review += `2. **Stress Testing:**\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `   • Cascading failures across agents\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `   • Retry storm scenarios\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `   • Error queue overflow conditions\n\n`;</span>
+            
+<span class="cstat-no" title="statement not covered" >            review += `🔒 **Security Testing:**\n\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `1. **Information Disclosure:**\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `   • Verify no sensitive data in error messages\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `   • Test production vs development error details\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `   • Check for path traversal in file errors\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `   • Validate no credentials in logs\n\n`;</span>
+            
+<span class="cstat-no" title="statement not covered" >            review += `2. **Attack Vectors:**\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `   • Error-based DoS attempts\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `   • Log injection through error messages\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `   • Memory exhaustion via large contexts\n\n`;</span>
+            
+<span class="cstat-no" title="statement not covered" >            review += `📊 **Test Scenarios Matrix:**\n\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `| Error Type | Unit | Integration | E2E | Security | Performance |\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `|------------|------|-------------|-----|----------|-------------|\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `| ValidationError | ✓ | ✓ | ✓ | ✓ | ✓ |\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `| ConfigurationError | ✓ | ✓ | ✓ | ✓ | - |\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `| CommunicationError | ✓ | ✓ | ✓ | ✓ | ✓ |\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `| MemoryError | ✓ | ✓ | - | ✓ | ✓ |\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `| AgentError (base) | ✓ | ✓ | ✓ | ✓ | ✓ |\n\n`;</span>
+            
+<span class="cstat-no" title="statement not covered" >            review += `🚨 **Quality Risks Identified:**\n\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `1. **HIGH**: No retry mechanism for CommunicationErrors\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `2. **HIGH**: Potential info leak in production error details\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `3. **MEDIUM**: No circuit breaker for repeated failures\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `4. **MEDIUM**: Missing error correlation IDs\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `5. **LOW**: No error metrics collection\n\n`;</span>
+            
+<span class="cstat-no" title="statement not covered" >            review += `📝 **Regression Test Requirements:**\n\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `1. All existing error paths must continue working\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `2. Error format changes need migration tests\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `3. Backward compatibility for error codes\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `4. Performance regression tests for error paths\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `5. Security regression for error disclosure\n\n`;</span>
+            
+<span class="cstat-no" title="statement not covered" >            review += `**Recommended Test Implementation Order:**\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `1. Unit tests for error classes (Day 1)\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `2. Security tests for information disclosure (Day 1)\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `3. Integration tests for error propagation (Day 2)\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `4. Performance tests under error conditions (Day 3)\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `5. E2E error scenarios (Day 3)\n`;</span>
+            
+<span class="cstat-no" title="statement not covered" >            return review;</span>
+          }
+          
+          // Multi-agent system testing
+<span class="cstat-no" title="statement not covered" >          <span class="missing-if-branch" title="if path not taken" >I</span>if (context.includes('multi-agent') || context.includes('MCP')) {</span>
+<span class="cstat-no" title="statement not covered" >            review += `**QA Strategy - Multi-Agent MCP Framework:**\n\n`;</span>
+            
+<span class="cstat-no" title="statement not covered" >            review += `🧪 **Test Architecture:**\n\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `1. **Unit Test Coverage (Target: 85%)**\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `   • Individual agent components\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `   • MCP protocol handlers\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `   • Message routing logic\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `   • Persistence layer\n\n`;</span>
+            
+<span class="cstat-no" title="statement not covered" >            review += `2. **Integration Testing:**\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `   • Agent-to-agent communication\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `   • Shared knowledge synchronization\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `   • Port allocation and conflicts\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `   • Message queue reliability\n\n`;</span>
+            
+<span class="cstat-no" title="statement not covered" >            review += `3. **E2E Test Scenarios:**\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `   • Multi-agent collaboration workflows\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `   • Failure recovery scenarios\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `   • Performance under load\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `   • Security penetration tests\n\n`;</span>
+            
+<span class="cstat-no" title="statement not covered" >            review += `**Priority Test Areas:**\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `1. Message delivery guarantees\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `2. Concurrent access to shared resources\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `3. Agent lifecycle management\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `4. Error propagation across agents\n`;</span>
+<span class="cstat-no" title="statement not covered" >            review += `5. Performance benchmarks\n`;</span>
+            
+<span class="cstat-no" title="statement not covered" >            return review;</span>
+          }
+          
+          // Generic QA review with context
+<span class="cstat-no" title="statement not covered" >          review += `Based on the context provided, here's my QA assessment:\n\n`;</span>
+<span class="cstat-no" title="statement not covered" >          review += `**Test Coverage Areas:**\n`;</span>
+<span class="cstat-no" title="statement not covered" >          review += `• Functional testing of core features\n`;</span>
+<span class="cstat-no" title="statement not covered" >          review += `• Integration testing between components\n`;</span>
+<span class="cstat-no" title="statement not covered" >          review += `• Performance testing under expected load\n`;</span>
+<span class="cstat-no" title="statement not covered" >          review += `• Security vulnerability assessment\n`;</span>
+<span class="cstat-no" title="statement not covered" >          review += `• User acceptance criteria validation\n\n`;</span>
+          
+<span class="cstat-no" title="statement not covered" >          review += `**Risk Assessment:**\n`;</span>
+<span class="cstat-no" title="statement not covered" >          review += `• Identify critical paths requiring extensive testing\n`;</span>
+<span class="cstat-no" title="statement not covered" >          review += `• Evaluate potential failure modes\n`;</span>
+<span class="cstat-no" title="statement not covered" >          review += `• Assess impact of defects on users\n`;</span>
+<span class="cstat-no" title="statement not covered" >          review += `• Prioritize testing based on risk\n\n`;</span>
+          
+<span class="cstat-no" title="statement not covered" >          review += `To provide more specific testing recommendations, I would need:\n`;</span>
+<span class="cstat-no" title="statement not covered" >          review += `• Detailed requirements or user stories\n`;</span>
+<span class="cstat-no" title="statement not covered" >          review += `• Architecture diagrams\n`;</span>
+<span class="cstat-no" title="statement not covered" >          review += `• Performance benchmarks\n`;</span>
+<span class="cstat-no" title="statement not covered" >          review += `• Security requirements\n`;</span>
+          
+<span class="cstat-no" title="statement not covered" >          return review;</span>
+        }
+        
+        // Generic QA review request
+<span class="cstat-no" title="statement not covered" >        return `As your QA Manager, I need more specific information to provide a comprehensive testing strategy.</span>
+&nbsp;
+Please provide:
+• The specific component or feature to test
+• Quality requirements and acceptance criteria
+• Performance and security requirements
+• Timeline and resource constraints
+• Any known risks or concerns
+&nbsp;
+I'll then develop a detailed test plan covering functional, integration, performance, and security testing.`;
+      }
+      
+      // QA metrics and reporting
+<span class="cstat-no" title="statement not covered" >      <span class="missing-if-branch" title="if path not taken" >I</span>if (task.toLowerCase().includes('metrics') || task.toLowerCase().includes('report')) {</span>
+<span class="cstat-no" title="statement not covered" >        return `As ${name}, I track and report on key quality metrics:</span>
+&nbsp;
+**Current Quality Metrics:**
+• Test automation coverage: Unit 85%, Integration 70%, E2E 40%
+• Bug escape rate: 0.3% (target &lt; 0.5%)
+• Test execution time: 35 minutes full regression
+• Critical bug SLA compliance: 98%
+• Code coverage: 82% overall
+&nbsp;
+**Testing Stack:**
+• Unit: Jest with 85% coverage requirement
+• E2E: Cypress for user workflows
+• Performance: k6 for load testing
+• Security: OWASP scanning, dependency checks
+&nbsp;
+**Quality Gates:**
+• All PRs require passing tests
+• No critical or high severity bugs
+• Performance within baseline thresholds
+• Security scan must pass
+&nbsp;
+${context ? `\nFor ${context}, I can provide specific metrics and establish appropriate quality gates.` : ''}
+&nbsp;
+What quality metrics would you like to review in detail?`;
+      }
+    }
+    
+    // Generic response for other tasks
+<span class="cstat-no" title="statement not covered" >    return `As ${name} (${role}), I understand you need help with: "${task}"</span>
+&nbsp;
+Based on my responsibilities:
+${responsibilities.map(<span class="fstat-no" title="function not covered" >r </span>=&gt; <span class="cstat-no" title="statement not covered" >`• ${r}`)</span>.join('\n')}
+&nbsp;
+${context ? `Context: ${context}\n` : ''}
+&nbsp;
+I'm ready to assist with my ${communication_style.tone} approach, focusing on ${communication_style.focus}. How would you like to proceed?`;
+  }
+&nbsp;
+<span class="fstat-no" title="function not covered" >  async </span>sendMessage(message: AgentMessage): Promise&lt;{ content: Array&lt;{ type: string; text: string }&gt; }&gt; {
+    // In real implementation, this would use IPC or message broker
+<span class="cstat-no" title="statement not covered" >    this.messageQueue.push(message);</span>
+    
+<span class="cstat-no" title="statement not covered" >    return {</span>
+      content: [{
+        type: "text",
+        text: `Message sent to ${message.to}`
+      }]
+    };
+  }
+&nbsp;
+<span class="fstat-no" title="function not covered" >  getPersona(</span>): PersonaConfig {
+<span class="cstat-no" title="statement not covered" >    return this.persona;</span>
+  }
+&nbsp;
+<span class="fstat-no" title="function not covered" >  getMessageQueue(</span>): AgentMessage[] {
+<span class="cstat-no" title="statement not covered" >    return [...this.messageQueue];</span>
+  }
+}</pre></td></tr></table></pre>
+
+                <div class='push'></div><!-- for sticky footer -->
+            </div><!-- /wrapper -->
+            <div class='footer quiet pad2 space-top1 center small'>
+                Code coverage generated by
+                <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
+                at 2025-06-23T12:19:51.690Z
+            </div>
+        <script src="../prettify.js"></script>
+        <script>
+            window.onload = function () {
+                prettyPrint();
+            };
+        </script>
+        <script src="../sorter.js"></script>
+        <script src="../block-navigation.js"></script>
+    </body>
+</html>
+    

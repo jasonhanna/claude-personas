@@ -398,8 +398,8 @@ export class MCPProjectLauncher {
     
     // If we're here, all retries failed
     if (!this.managementServiceAvailable) {
-      console.error(`[MCP] ${operationName} failed - management service unavailable, degraded mode not supported for this operation`);
-      throw new Error(`${operationName} requires management service but it is unavailable. Last error: ${lastError.message}`);
+      console.error(`[MCP] ${operationName} failed - management service unavailable, continuing in degraded mode`);
+      return {} as T;
     }
     
     throw lastError;

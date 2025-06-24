@@ -14,6 +14,11 @@ describe('Permission Manager', () => {
     jwtAuth = createTestJwtAuth();
   });
 
+  afterEach(() => {
+    // Clear all cache and timers to prevent open handles
+    permissionManager.clearAllCache();
+  });
+
   describe('Role-Based Tool Permissions', () => {
     test('engineering-manager should have access to engineering tools', () => {
       const token = jwtAuth.generateToken('test-em', 'engineering-manager', []);

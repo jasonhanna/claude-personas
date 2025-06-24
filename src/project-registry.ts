@@ -292,22 +292,26 @@ export class ProjectRegistry {
   // Cleanup and maintenance
   async cleanup(): Promise<void> {
     try {
-      console.log('Running registry cleanup...');
+      let cleanupActions = 0;
       
-      await this.cleanupStaleSessions();
-      await this.cleanupStaleAgents();
-      await this.cleanupEmptyProjects();
+      cleanupActions += await this.cleanupStaleSessions();
+      cleanupActions += await this.cleanupStaleAgents();
+      cleanupActions += await this.cleanupEmptyProjects();
       
-      console.log('Registry cleanup completed');
+      // Only log if there was actual cleanup work done
+      if (cleanupActions > 0) {
+        console.log(`Registry cleanup completed: ${cleanupActions} actions taken`);
+      }
     } catch (error: any) {
       console.error('Registry cleanup failed:', error.message);
     }
   }
 
-  private async cleanupStaleSessions(): Promise<void> {
+  private async cleanupStaleSessions(): Promise<number> {
     const sessions = await this.loadSessions();
     const now = new Date();
     const activeSessions = [];
+    let removedCount = 0;
     
     for (const session of sessions) {
       const isActive = this.isProcessActive(session.pid);
@@ -317,14 +321,20 @@ export class ProjectRegistry {
         activeSessions.push(session);
       } else {
         console.log(`Removing stale session ${session.sessionId} (pid: ${session.pid})`);
+        removedCount++;
       }
     }
     
-    await this.saveSessions(activeSessions);
+    if (removedCount > 0) {
+      await this.saveSessions(activeSessions);
+    }
+    return removedCount;
   }
 
-  private async cleanupStaleAgents(): Promise<void> {
+  private async cleanupStaleAgents(): Promise<number> {
     const projects = await this.loadProjects();
+    let removedCount = 0;
+    let hasChanges = false;
     
     for (const project of projects) {
       const activeAgents = [];
@@ -337,16 +347,21 @@ export class ProjectRegistry {
           activeAgents.push(agent);
         } else {
           console.log(`Removing stale agent ${agent.persona} (pid: ${agent.pid}) from project ${project.projectHash}`);
+          removedCount++;
+          hasChanges = true;
         }
       }
       
       project.agents = activeAgents;
     }
     
-    await this.saveProjects(projects);
+    if (hasChanges) {
+      await this.saveProjects(projects);
+    }
+    return removedCount;
   }
 
-  private async cleanupEmptyProjects(): Promise<void> {
+  private async cleanupEmptyProjects(): Promise<number> {
     const projects = await this.loadProjects();
     const sessions = await this.loadSessions();
     
@@ -357,10 +372,12 @@ export class ProjectRegistry {
       return hasActiveSessions || hasActiveAgents;
     });
     
-    if (activeProjects.length !== projects.length) {
-      console.log(`Removing ${projects.length - activeProjects.length} empty projects`);
+    const removedCount = projects.length - activeProjects.length;
+    if (removedCount > 0) {
+      console.log(`Removing ${removedCount} empty projects`);
       await this.saveProjects(activeProjects);
     }
+    return removedCount;
   }
 
   private isProcessActive(pid: number): boolean {

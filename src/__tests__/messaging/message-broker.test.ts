@@ -2,9 +2,9 @@
  * Unit tests for Message Broker
  */
 
+import { testEnvironments } from '../../test-utils/test-environment-separation.js';
 import { MessageBroker, BrokerMessage } from '../../messaging/message-broker.js';
-import { MockTransport } from '../../test-utils/index.js';
-import { createTestMessageBroker, testAssertions } from '../../test-utils/index.js';
+import { MockTransport, createTestMessageBroker, testAssertions } from '../../test-utils/index.js';
 
 describe('Message Broker', () => {
   let broker: MessageBroker;
@@ -12,10 +12,25 @@ describe('Message Broker', () => {
   let mockTransport: MockTransport;
 
   beforeEach(async () => {
+    // Set up unit test environment for message broker testing
+    const testName = expect.getState().currentTestName || 'message-broker-test';
+    const environment = testEnvironments.unit(testName);
+    await environment.setup();
+    (global as any).testEnvironment = environment;
+
     const testSetup = createTestMessageBroker();
     broker = testSetup.broker;
     mockDatabase = testSetup.database;
     mockTransport = new MockTransport();
+    
+    // Register with resource registry for cleanup
+    const registry = environment.getResourceRegistry();
+    registry.registerResource(broker, async () => {
+      await broker.stop();
+    }, { name: 'message-broker' });
+    registry.registerResource(mockTransport, async () => {
+      await mockTransport.disconnect();
+    }, { name: 'mock-transport' });
     
     await broker.start();
     broker.registerTransport('test', mockTransport);
@@ -26,6 +41,13 @@ describe('Message Broker', () => {
     await broker.stop();
     await mockTransport.disconnect();
     mockDatabase.reset();
+    
+    // Clean up test environment
+    const environment = (global as any).testEnvironment;
+    if (environment) {
+      await environment.teardown();
+      delete (global as any).testEnvironment;
+    }
   });
 
   describe('Message Creation', () => {

@@ -1,9 +1,14 @@
 import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
-import { PersonaManagementService } from '../src/persona-management-service.js';
+import { PersonaManagementService } from '../src/persona-management-service';
 
 // Mock dependencies
-jest.mock('../src/persona-manager.js');
-jest.mock('../src/project-registry.js');
+jest.mock('../src/persona-manager');
+jest.mock('../src/project-registry');
+
+// Mock the import.meta usage
+jest.mock('url', () => ({
+  fileURLToPath: jest.fn(() => '/mocked/path/to/file.js')
+}));
 
 describe('PersonaManagementService', () => {
   let service: PersonaManagementService;
@@ -16,29 +21,29 @@ describe('PersonaManagementService', () => {
     
     // Create mock implementations
     mockPersonaManager = {
-      initializeDirectoryStructure: jest.fn().mockResolvedValue(undefined),
-      copyPersonaTemplates: jest.fn().mockResolvedValue(undefined),
-      loadConfig: jest.fn().mockResolvedValue(null),
-      saveConfig: jest.fn().mockResolvedValue(undefined),
-      loadPersonas: jest.fn().mockResolvedValue(new Map()),
-      initializePersonaMemory: jest.fn().mockResolvedValue(undefined),
-      savePersona: jest.fn().mockResolvedValue(undefined),
-      deletePersona: jest.fn().mockResolvedValue(undefined),
-      resetPersona: jest.fn().mockResolvedValue(undefined),
+      initializeDirectoryStructure: jest.fn().mockImplementation(() => Promise.resolve()),
+      copyPersonaTemplates: jest.fn().mockImplementation(() => Promise.resolve()),
+      loadConfig: jest.fn().mockImplementation(() => Promise.resolve(null)),
+      saveConfig: jest.fn().mockImplementation(() => Promise.resolve()),
+      loadPersonas: jest.fn().mockImplementation(() => Promise.resolve(new Map())),
+      initializePersonaMemory: jest.fn().mockImplementation(() => Promise.resolve()),
+      savePersona: jest.fn().mockImplementation(() => Promise.resolve()),
+      deletePersona: jest.fn().mockImplementation(() => Promise.resolve()),
+      resetPersona: jest.fn().mockImplementation(() => Promise.resolve()),
       getPaths: jest.fn().mockReturnValue({}),
     };
 
     mockProjectRegistry = {
-      initialize: jest.fn().mockResolvedValue(undefined),
-      listProjects: jest.fn().mockResolvedValue([]),
-      getProject: jest.fn().mockResolvedValue(null),
-      getProjectSessions: jest.fn().mockResolvedValue([]),
-      registerProject: jest.fn().mockResolvedValue(undefined),
-      registerAgent: jest.fn().mockResolvedValue(undefined),
-      registerSession: jest.fn().mockResolvedValue(undefined),
-      updateSessionActivity: jest.fn().mockResolvedValue(undefined),
-      updateAgentActivity: jest.fn().mockResolvedValue(undefined),
-      removeSession: jest.fn().mockResolvedValue(undefined),
+      initialize: jest.fn().mockImplementation(() => Promise.resolve()),
+      listProjects: jest.fn().mockImplementation(() => Promise.resolve([])),
+      getProject: jest.fn().mockImplementation(() => Promise.resolve(null)),
+      getProjectSessions: jest.fn().mockImplementation(() => Promise.resolve([])),
+      registerProject: jest.fn().mockImplementation(() => Promise.resolve()),
+      registerAgent: jest.fn().mockImplementation(() => Promise.resolve()),
+      registerSession: jest.fn().mockImplementation(() => Promise.resolve()),
+      updateSessionActivity: jest.fn().mockImplementation(() => Promise.resolve()),
+      updateAgentActivity: jest.fn().mockImplementation(() => Promise.resolve()),
+      removeSession: jest.fn().mockImplementation(() => Promise.resolve()),
     };
 
     // Create service instance
@@ -52,7 +57,26 @@ describe('PersonaManagementService', () => {
   afterEach(async () => {
     // Clean up
     if (service) {
-      await service.stop();
+      // Mock the server's close method to prevent hanging
+      if ((service as any).server) {
+        (service as any).server.close = jest.fn().mockImplementation((...args: any[]) => {
+          const callback = args.find(arg => typeof arg === 'function');
+          if (callback) callback();
+        });
+      }
+      
+      try {
+        let timeoutId: NodeJS.Timeout | undefined;
+        await Promise.race([
+          service.stop(),
+          new Promise((_, reject) => {
+            timeoutId = setTimeout(() => reject(new Error('Timeout')), 1000);
+          })
+        ]);
+        if (timeoutId) clearTimeout(timeoutId);
+      } catch (error) {
+        // Ignore timeout errors in cleanup
+      }
     }
   });
 
@@ -74,7 +98,7 @@ describe('PersonaManagementService', () => {
 
     it('should throw error when no ports available', async () => {
       // Mock isPortAvailable to always return false
-      (service as any).isPortAvailable = jest.fn().mockResolvedValue(false);
+      (service as any).isPortAvailable = jest.fn().mockImplementation(() => Promise.resolve(false));
       
       await expect(service.allocatePort('test-hash', 'test-persona'))
         .rejects.toThrow('Port allocation failed');
@@ -86,11 +110,16 @@ describe('PersonaManagementService', () => {
       const initSpy = jest.spyOn(service as any, 'initializeSystem');
       
       // Mock port availability check
-      (service as any).isPortAvailable = jest.fn().mockResolvedValue(true);
+      (service as any).isPortAvailable = jest.fn().mockImplementation(() => Promise.resolve(true));
       
-      // Don't actually start the server
-      const originalStart = service.start;
-      service.start = jest.fn().mockResolvedValue(undefined);
+      // Mock the HTTP server startup to avoid actual server
+      const mockServer = { close: jest.fn((callback: any) => callback && callback()) };
+      (service as any).app.listen = jest.fn().mockImplementation((...args: any[]) => {
+        const callback = args.find(arg => typeof arg === 'function');
+        if (callback) callback();
+        (service as any).server = mockServer;
+        return mockServer;
+      });
       
       await service.start();
       
@@ -106,7 +135,7 @@ describe('PersonaManagementService', () => {
         new Error('Directory creation failed')
       );
       
-      (service as any).isPortAvailable = jest.fn().mockResolvedValue(true);
+      (service as any).isPortAvailable = jest.fn().mockImplementation(() => Promise.resolve(true));
       
       await expect(service.start()).rejects.toThrow();
     });
@@ -114,7 +143,7 @@ describe('PersonaManagementService', () => {
 
   describe('Error Handling', () => {
     it('should handle port already in use', async () => {
-      (service as any).isPortAvailable = jest.fn().mockResolvedValue(false);
+      (service as any).isPortAvailable = jest.fn().mockImplementation(() => Promise.resolve(false));
       
       await expect(service.start()).rejects.toThrow('Port 3000 is already in use');
     });
@@ -132,8 +161,14 @@ describe('PersonaManagementService', () => {
     it('should use default config when none exists', async () => {
       mockPersonaManager.loadConfig.mockResolvedValue(null);
       
-      (service as any).isPortAvailable = jest.fn().mockResolvedValue(true);
-      service.start = jest.fn().mockResolvedValue(undefined);
+      (service as any).isPortAvailable = jest.fn().mockImplementation(() => Promise.resolve(true));
+      const mockServer = { close: jest.fn((callback: any) => callback && callback()) };
+      (service as any).app.listen = jest.fn().mockImplementation((...args: any[]) => {
+        const callback = args.find(arg => typeof arg === 'function');
+        if (callback) callback();
+        (service as any).server = mockServer;
+        return mockServer;
+      });
       
       await service.start();
       
@@ -149,8 +184,14 @@ describe('PersonaManagementService', () => {
       
       mockPersonaManager.loadConfig.mockResolvedValue(existingConfig);
       
-      (service as any).isPortAvailable = jest.fn().mockResolvedValue(true);
-      service.start = jest.fn().mockResolvedValue(undefined);
+      (service as any).isPortAvailable = jest.fn().mockImplementation(() => Promise.resolve(true));
+      const mockServer = { close: jest.fn((callback: any) => callback && callback()) };
+      (service as any).app.listen = jest.fn().mockImplementation((...args: any[]) => {
+        const callback = args.find(arg => typeof arg === 'function');
+        if (callback) callback();
+        (service as any).server = mockServer;
+        return mockServer;
+      });
       
       await service.start();
       

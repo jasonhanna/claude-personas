@@ -1,0 +1,71 @@
+
+> multi-agent-mcp-framework@1.0.0 persona-service:prod
+> node dist/start-persona-service.js
+
+[2025-06-23T18:54:29.001Z] [AuthService] Default API keys created:
+[2025-06-23T18:54:29.001Z] [AuthService]   Admin: agent_352ada23bfe1b2d291f72d385fc41bf864d04150541ebd15d8cd4ecafa0dc1a6
+[2025-06-23T18:54:29.001Z] [AuthService]   Service: agent_3f0b66378cc97ee5014afe94452b2c1bf51443255a4a99f0ee8e8b9d03a32c55
+[2025-06-23T18:54:29.003Z] [PersonaManagementService] Starting Persona Management Service...
+[2025-06-23T18:54:29.005Z] [PersonaManagementService] Initializing Persona Management System...
+[2025-06-23T18:54:29.005Z] Initializing directory structure at /Users/jhanna/.claude-agents...
+[2025-06-23T18:54:29.005Z] Created directory: /Users/jhanna/.claude-agents
+[2025-06-23T18:54:29.005Z] Created directory: /Users/jhanna/.claude-agents/personas
+[2025-06-23T18:54:29.005Z] Created directory: /Users/jhanna/.claude-agents/projects
+[2025-06-23T18:54:29.005Z] Created directory: /Users/jhanna/.claude-agents/shared
+[2025-06-23T18:54:29.005Z] Created directory: /Users/jhanna/.claude-agents/registry
+[2025-06-23T18:54:29.005Z] Created directory: /Users/jhanna/.claude-agents/logs
+[2025-06-23T18:54:29.006Z] Directory structure initialization complete
+[2025-06-23T18:54:29.006Z] Copying persona templates...
+[2025-06-23T18:54:29.006Z] Persona engineering-manager.yaml already exists, skipping
+[2025-06-23T18:54:29.006Z] Persona product-manager.yaml already exists, skipping
+[2025-06-23T18:54:29.006Z] Persona qa-manager.yaml already exists, skipping
+[2025-06-23T18:54:29.006Z] Persona templates copying complete
+[2025-06-23T18:54:29.006Z] Loading personas from /Users/jhanna/.claude-agents/personas...
+[2025-06-23T18:54:29.008Z] Loaded persona: Alex Chen (engineering-manager)
+[2025-06-23T18:54:29.009Z] Loaded persona: Sarah Martinez (product-manager)
+[2025-06-23T18:54:29.009Z] Loaded persona: Marcus Johnson (qa-manager)
+[2025-06-23T18:54:29.009Z] Loaded 3 personas
+[2025-06-23T18:54:29.009Z] [PersonaManagementService] System initialization complete
+Project registry initialized
+[2025-06-23T18:54:29.010Z] [MemoryLockManager] Initialized
+[2025-06-23T18:54:29.010Z] [PersonaManagementService] Cleanup system started (TTL: 300000ms)
+[2025-06-23T18:54:29.010Z] [HealthMonitor] Health monitoring started (interval: 30000ms)
+[2025-06-23T18:54:29.010Z] [ServiceDiscovery] Service service-registered: persona-management-service (b23778666c6b6a08)
+[2025-06-23T18:54:29.011Z] [PersonaManagementService] Persona Management Service started on port 3000
+[2025-06-23T18:54:29.011Z] [PersonaManagementService] Health check: http://localhost:3000/health
+[2025-06-23T18:54:29.011Z] [PersonaManagementService] API documentation: http://localhost:3000/api
+
+🚀 Persona Management Service is running!
+📊 Health check: http://localhost:3000/health
+📖 API endpoints: http://localhost:3000/api
+⌨️  Press Ctrl+C to stop
+
+[2025-06-23T18:56:29.003Z] [ServiceDiscovery] Service unregistered: persona-management-service (b23778666c6b6a08)
+[2025-06-23T19:48:42.494Z] ALERT (high): High Memory Usage
+[2025-06-23T20:01:42.525Z] ALERT (high): High Memory Usage
+[2025-06-23T20:17:42.565Z] ALERT (high): High Memory Usage
+[2025-06-23T20:30:12.530Z] ALERT (high): High Memory Usage
+[2025-06-23T20:42:42.545Z] ALERT (high): High Memory Usage
+[2025-06-23T20:55:42.557Z] ALERT (high): High Memory Usage
+[2025-06-23T21:08:12.580Z] ALERT (high): High Memory Usage
+[2025-06-23T21:20:12.632Z] ALERT (high): High Memory Usage
+[2025-06-23T21:33:12.674Z] ALERT (high): High Memory Usage
+[2025-06-23T21:46:12.714Z] ALERT (high): High Memory Usage
+[2025-06-23T21:59:12.840Z] ALERT (high): High Memory Usage
+[2025-06-23T22:12:12.894Z] ALERT (high): High Memory Usage
+[2025-06-23T22:24:42.862Z] ALERT (high): High Memory Usage
+[2025-06-23T22:29:42.876Z] ALERT (high): High Memory Usage
+[2025-06-23T22:37:42.896Z] ALERT (high): High Memory Usage
+[2025-06-23T22:42:42.902Z] ALERT (high): High Memory Usage
+[2025-06-23T22:51:12.928Z] ALERT (high): High Memory Usage
+[2025-06-23T22:56:13.016Z] ALERT (high): High Memory Usage
+[2025-06-23T23:04:13.051Z] ALERT (high): High Memory Usage
+[2025-06-23T23:09:13.071Z] ALERT (high): High Memory Usage
+[2025-06-23T23:21:13.121Z] ALERT (high): High Memory Usage
+[2025-06-23T23:34:13.170Z] ALERT (high): High Memory Usage
+[2025-06-23T23:47:13.184Z] ALERT (high): High Memory Usage
+[2025-06-24T00:03:13.203Z] ALERT (high): High Memory Usage
+[2025-06-24T00:15:43.237Z] ALERT (high): High Memory Usage
+[2025-06-24T00:28:13.270Z] ALERT (high): High Memory Usage
+[2025-06-24T00:41:13.278Z] ALERT (high): High Memory Usage
+[2025-06-24T00:54:13.311Z] ALERT (high): High Memory Usage

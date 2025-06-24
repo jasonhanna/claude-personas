@@ -27,6 +27,7 @@ export interface RolePermissions {
 export class PermissionManager {
   private rolePermissions = new Map<string, RolePermissions>();
   private permissionCache = new Map<string, boolean>();
+  private cacheTimers = new Map<string, NodeJS.Timeout>();
 
   constructor() {
     this.initializeDefaultPermissions();
@@ -47,7 +48,20 @@ export class PermissionManager {
     
     // Cache result for 5 minutes
     this.permissionCache.set(cacheKey, hasPermission);
-    setTimeout(() => this.permissionCache.delete(cacheKey), 5 * 60 * 1000);
+    
+    // Clear any existing timer for this key
+    const existingTimer = this.cacheTimers.get(cacheKey);
+    if (existingTimer) {
+      clearTimeout(existingTimer);
+    }
+    
+    // Set new timer
+    const timer = setTimeout(() => {
+      this.permissionCache.delete(cacheKey);
+      this.cacheTimers.delete(cacheKey);
+    }, 5 * 60 * 1000);
+    
+    this.cacheTimers.set(cacheKey, timer);
 
     return hasPermission;
   }
@@ -221,7 +235,23 @@ export class PermissionManager {
         return true; // For now, clear all cache on role update
       });
     
-    keysToDelete.forEach(key => this.permissionCache.delete(key));
+    keysToDelete.forEach(key => {
+      this.permissionCache.delete(key);
+      const timer = this.cacheTimers.get(key);
+      if (timer) {
+        clearTimeout(timer);
+        this.cacheTimers.delete(key);
+      }
+    });
+  }
+  
+  /**
+   * Clear all cache and timers - useful for cleanup in tests
+   */
+  clearAllCache(): void {
+    this.permissionCache.clear();
+    this.cacheTimers.forEach(timer => clearTimeout(timer));
+    this.cacheTimers.clear();
   }
 
   /**
@@ -251,7 +281,7 @@ export class PermissionManager {
     // Check rate limiting (if implemented)
     const rolePerms = this.rolePermissions.get(agent.role);
     if (rolePerms?.restrictions) {
-      // TODO: Implement rate limiting checks
+      // TODO: Issue #9 - Implement rate limiting checks
       // For now, just return allowed
     }
 
@@ -259,7 +289,7 @@ export class PermissionManager {
     if (rolePerms?.restrictions?.allowedHours) {
       const now = new Date();
       const currentHour = now.getHours();
-      // TODO: Parse allowedHours and check current time
+      // TODO: Issue #10 - Parse allowedHours and check current time
     }
 
     return { allowed: true };

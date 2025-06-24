@@ -32,8 +32,8 @@ describe('ProjectRegistry', () => {
     const mockReadFile = jest.mocked(fs.promises.readFile);
     const mockAccess = jest.mocked(fs.promises.access);
     
-    mockMkdir.mockResolvedValue(undefined);
-    mockWriteFile.mockResolvedValue(undefined);
+    mockMkdir.mockImplementation(() => Promise.resolve(undefined));
+    mockWriteFile.mockImplementation(() => Promise.resolve());
     mockReadFile.mockResolvedValue('[]');
     mockAccess.mockRejectedValue(new Error('ENOENT'));
   });

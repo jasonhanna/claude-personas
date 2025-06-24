@@ -5,6 +5,8 @@
 
 import { Transport, TransportMessage } from '../transport/transport-interface.js';
 import { ValidationError, CommunicationError, MemoryError } from '../errors.js';
+import { ResourceRegistry } from '../resource-registry.js';
+import { createLogger } from '../utils/logger.js';
 import sqlite3 from 'sqlite3';
 const { Database } = sqlite3;
 import { promisify } from 'util';
@@ -39,6 +41,7 @@ export interface BrokerConfig {
   batchSize: number;
   cleanupInterval: number;
   messageRetention: number; // in milliseconds
+  agentId?: string; // Agent identifier for message attribution
 }
 
 export interface BrokerDependencies {
@@ -65,6 +68,8 @@ export class MessageBroker {
   private deps: BrokerDependencies;
   private cleanupTimer?: NodeJS.Timeout;
   private isStarted = false;
+  private resourceRegistry = new ResourceRegistry('MessageBroker');
+  private logger = createLogger('MessageBroker');
 
   constructor(
     config: Partial<BrokerConfig> = {},
@@ -108,6 +113,14 @@ export class MessageBroker {
 
     try {
       await this.initializeDatabase();
+      
+      // Register database for cleanup
+      this.resourceRegistry.registerResource(
+        this.db,
+        () => this.closeDatabaseSafely(),
+        { name: 'database', component: 'MessageBroker' }
+      );
+      
       await this.recoverPendingMessages();
       this.startCleanupTimer();
       this.isStarted = true;
@@ -124,30 +137,62 @@ export class MessageBroker {
       return;
     }
 
-    // Stop cleanup timer
+    const errors: Error[] = [];
+
+    // Stop cleanup timer and wait for any running cleanup to complete
     if (this.cleanupTimer) {
       clearInterval(this.cleanupTimer);
       this.cleanupTimer = undefined;
+      
+      // Wait a brief moment to ensure timer callback isn't running
+      await new Promise(resolve => setTimeout(resolve, 100));
     }
 
-    // Disconnect all transports
-    for (const transport of this.transports.values()) {
+    // Clear all pending requests with cleanup timeout errors
+    for (const [correlationId, { reject, timeout }] of this.pendingRequests) {
       try {
-        await transport.disconnect();
+        clearTimeout(timeout);
+        reject(new CommunicationError('Message broker shutting down', { correlationId }));
       } catch (error) {
-        console.error('Error disconnecting transport:', error);
+        errors.push(error instanceof Error ? error : new Error(String(error)));
       }
     }
+    this.pendingRequests.clear();
 
-    // Close database
-    await new Promise<void>((resolve, reject) => {
-      this.db.close((error: any) => {
-        if (error) reject(error);
-        else resolve();
-      });
-    });
+    // Disconnect all transports with proper error handling
+    const transportDisconnectPromises = Array.from(this.transports.entries()).map(
+      async ([name, transport]) => {
+        try {
+          await transport.disconnect();
+        } catch (error) {
+          errors.push(new CommunicationError(`Failed to disconnect ${name} transport`, {
+            transportName: name,
+            cause: error instanceof Error ? error.message : String(error)
+          }));
+        }
+      }
+    );
+
+    await Promise.allSettled(transportDisconnectPromises);
+
+    // Use ResourceRegistry for comprehensive cleanup
+    try {
+      await this.resourceRegistry.cleanup();
+    } catch (error) {
+      errors.push(error instanceof Error ? error : new Error(String(error)));
+    }
+
+    // Clear references
+    this.cleanupTimer = undefined;
 
     this.isStarted = false;
+
+    // If there were errors during shutdown, throw them as an aggregate
+    if (errors.length > 0) {
+      // Use a simple Error with combined messages for compatibility
+      const combinedMessage = `Errors occurred during MessageBroker shutdown: ${errors.map(e => e.message).join('; ')}`;
+      throw new Error(combinedMessage);
+    }
   }
 
   registerTransport(name: string, transport: Transport): void {
@@ -159,7 +204,7 @@ export class MessageBroker {
         const brokerMessage = this.convertFromTransportMessage(transportMessage);
         await this.handleIncomingMessage(brokerMessage);
       } catch (error) {
-        console.error(`Error handling message from transport ${name}:`, error);
+        this.logger.error(`Error handling message from transport ${name}:`, error);
       }
     });
   }
@@ -255,7 +300,7 @@ export class MessageBroker {
   ): BrokerMessage {
     return {
       id: this.deps.crypto!.randomUUID(),
-      from: 'current-agent', // TODO: Get from context
+      from: this.config.agentId || 'unknown-agent', // Use configured agent ID
       to,
       type,
       content,
@@ -279,7 +324,7 @@ export class MessageBroker {
         return; // Success!
       } catch (error) {
         transportErrors.push(error instanceof Error ? error : new Error(String(error)));
-        console.warn(`Transport ${name} failed to deliver message:`, error);
+        this.logger.warn(`Transport ${name} failed to deliver message:`, error);
       }
     }
 
@@ -318,12 +363,12 @@ export class MessageBroker {
           try {
             await handler(message);
           } catch (error) {
-            console.error(`Handler error for pattern ${pattern}:`, error);
+            this.logger.error(`Handler error for pattern ${pattern}:`, error);
           }
         }
       }
     } catch (error) {
-      console.error('Error handling incoming message:', error);
+      this.logger.error('Error handling incoming message:', error);
     }
   }
 
@@ -420,8 +465,8 @@ export class MessageBroker {
   }
 
   private async recoverPendingMessages(): Promise<void> {
-    // TODO: Implement recovery of undelivered messages from database
-    console.log('Message recovery not yet implemented');
+    // TODO: Issue #6 - Implement recovery of undelivered messages from database
+    this.logger.debug('Message recovery not yet implemented');
   }
 
   private startCleanupTimer(): void {
@@ -429,14 +474,37 @@ export class MessageBroker {
       try {
         await this.cleanupOldMessages();
       } catch (error) {
-        console.error('Cleanup error:', error);
+        this.logger.error('Cleanup error:', error);
       }
     }, this.config.cleanupInterval);
+
+    // Register the timer for proper cleanup
+    this.resourceRegistry.registerInterval(this.cleanupTimer, {
+      name: 'cleanup',
+      component: 'MessageBroker'
+    });
   }
 
   private async cleanupOldMessages(): Promise<void> {
     const cutoff = Date.now() - this.config.messageRetention;
     const sql = 'DELETE FROM messages WHERE timestamp < ? AND status = "delivered"';
     await this.dbRun(sql, [cutoff]);
+  }
+
+  private async closeDatabaseSafely(): Promise<void> {
+    if (this.db && typeof this.db.close === 'function') {
+      return Promise.race([
+        new Promise<void>((resolve, reject) => {
+          this.db.close((error: any) => {
+            if (error) reject(error);
+            else resolve();
+          });
+        }),
+        // Timeout database closure after 5 seconds
+        new Promise<void>((_, reject) => 
+          setTimeout(() => reject(new Error('Database close timeout')), 5000)
+        )
+      ]);
+    }
   }
 }

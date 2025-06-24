@@ -4,8 +4,11 @@
   "description": "Framework for running Claude Code agents as MCP servers with different personas",
   "type": "module",
   "main": "dist/standalone-agent.js",
+  "bin": {
+    "claude-agents": "dist/cli-tool.js"
+  },
   "scripts": {
-    "build": "tsc && chmod +x dist/standalone-agent.js && chmod +x dist/start-persona-service.js && chmod +x dist/mcp-project-launcher.js && chmod +x dist/project-agent-server.js && npm run generate-config",
+    "build": "tsc && chmod +x dist/standalone-agent.js && chmod +x dist/start-persona-service.js && chmod +x dist/mcp-project-launcher.js && chmod +x dist/project-agent-server.js && chmod +x dist/cli-tool.js && npm run generate-config",
     "generate-config": "node scripts/generate-claude-config.js",
     "setup-mcp": "tsx scripts/setup-mcp.ts",
     "agent": "node dist/standalone-agent.js",
@@ -22,12 +25,19 @@
     "@modelcontextprotocol/sdk": "^0.5.0",
     "@types/express": "^5.0.3",
     "@types/glob": "^8.1.0",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node-fetch": "^2.6.12",
     "@types/sqlite3": "^3.1.11",
     "@types/ws": "^8.18.1",
+    "chalk": "^5.4.1",
+    "cli-table3": "^0.6.5",
+    "commander": "^14.0.0",
     "cors": "^2.8.5",
     "express": "^5.1.0",
     "glob": "^11.0.3",
     "js-yaml": "^4.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "node-fetch": "^3.3.2",
     "sqlite3": "^5.1.7",
     "ws": "^8.18.2",
     "yaml": "^2.3.0",
@@ -62,7 +72,9 @@
       "^(\\.{1,2}/.*)\\.js$": "$1",
       "^@modelcontextprotocol/sdk/(.*)$": "<rootDir>/src/test-utils/mcp-mocks.js"
     },
+    "setupFilesAfterEnv": ["<rootDir>/src/test-utils/jest-setup.ts"],
     "testEnvironment": "node",
+    "testTimeout": 10000,
     "roots": [
       "<rootDir>/src",
       "<rootDir>/tests"

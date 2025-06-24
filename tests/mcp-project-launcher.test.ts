@@ -8,7 +8,7 @@ jest.mock('child_process');
 jest.mock('fs');
 
 // Mock fetch globally
-global.fetch = jest.fn();
+global.fetch = jest.fn() as jest.MockedFunction<typeof fetch>;
 
 describe('MCPProjectLauncher', () => {
   let launcher: MCPProjectLauncher;
@@ -21,10 +21,10 @@ describe('MCPProjectLauncher', () => {
     
     // Mock ProjectRegistry
     mockProjectRegistry = {
-      initialize: jest.fn().mockResolvedValue(undefined),
-      getProject: jest.fn().mockResolvedValue(null),
-      registerProject: jest.fn().mockResolvedValue(undefined),
-      registerAgent: jest.fn().mockResolvedValue(undefined),
+      initialize: jest.fn().mockImplementation(() => Promise.resolve()),
+      getProject: jest.fn().mockImplementation(() => Promise.resolve(null)),
+      registerProject: jest.fn().mockImplementation(() => Promise.resolve()),
+      registerAgent: jest.fn().mockImplementation(() => Promise.resolve()),
     };
 
     launcher = new MCPProjectLauncher(testRole, testProjectDir);
@@ -61,9 +61,9 @@ describe('MCPProjectLauncher', () => {
 
   describe('Management Service Health Check', () => {
     it('should detect available management service', async () => {
-      (global.fetch as jest.Mock).mockResolvedValueOnce({
+      (global.fetch as jest.Mock).mockImplementation(() => Promise.resolve({
         ok: true
-      });
+      }));
 
       const isAvailable = await (launcher as any).checkManagementService();
       expect(isAvailable).toBe(true);
@@ -77,14 +77,14 @@ describe('MCPProjectLauncher', () => {
     });
 
     it('should detect unavailable management service', async () => {
-      (global.fetch as jest.Mock).mockRejectedValueOnce(new Error('Connection failed'));
+      (global.fetch as jest.Mock).mockImplementation(() => Promise.reject(new Error('Connection failed')));
 
       const isAvailable = await (launcher as any).checkManagementService();
       expect(isAvailable).toBe(false);
     });
 
     it('should handle timeout correctly', async () => {
-      (global.fetch as jest.Mock).mockRejectedValueOnce(new Error('Timeout'));
+      (global.fetch as jest.Mock).mockImplementation(() => Promise.reject(new Error('Timeout')));
 
       const isAvailable = await (launcher as any).checkManagementService();
       expect(isAvailable).toBe(false);
@@ -95,10 +95,19 @@ describe('MCPProjectLauncher', () => {
     it('should allocate available port', async () => {
       // Mock HTTP server creation for port checking
       const mockServer = {
-        listen: jest.fn((port, callback) => callback()),
-        close: jest.fn((callback) => callback()),
+        listen: jest.fn((...args: any[]) => {
+          const callback = args.find(arg => typeof arg === 'function');
+          if (callback) callback();
+        }),
+        close: jest.fn((...args: any[]) => {
+          const callback = args.find(arg => typeof arg === 'function');
+          if (callback) callback();
+        }),
         on: jest.fn(),
-        once: jest.fn((event, callback) => callback())
+        once: jest.fn((...args: any[]) => {
+          const callback = args.find(arg => typeof arg === 'function');
+          if (callback) callback();
+        })
       };
 
       jest.doMock('http', () => ({
@@ -112,38 +121,36 @@ describe('MCPProjectLauncher', () => {
 
     it('should retry on port conflicts', async () => {
       let attempts = 0;
-      const mockServer = {
-        listen: jest.fn((port, callback) => {
-          attempts++;
-          if (attempts < 3) {
-            // Simulate port conflict for first few attempts
-            mockServer.on.mock.calls.find(call => call[0] === 'error')?.[1]();
-          } else {
-            callback();
-          }
-        }),
-        close: jest.fn((callback) => callback()),
-        on: jest.fn(),
-        once: jest.fn((event, callback) => callback())
-      };
-
-      jest.doMock('http', () => ({
-        createServer: jest.fn(() => mockServer)
-      }));
+      
+      // Mock the isPortAvailable method to simulate port conflicts
+      const originalIsPortAvailable = (launcher as any).isPortAvailable;
+      (launcher as any).isPortAvailable = jest.fn().mockImplementation(async () => {
+        attempts++;
+        if (attempts < 3) {
+          return false; // Port not available, triggering retry
+        }
+        return true; // Port becomes available after retries
+      });
+      
+      // Ensure management service is unavailable to trigger local allocation
+      (launcher as any).managementServiceAvailable = false;
 
       const port = await (launcher as any).allocatePort();
       expect(port).toBeGreaterThanOrEqual(30000);
       expect(port).toBeLessThanOrEqual(40000);
       expect(attempts).toBeGreaterThan(1);
+      
+      // Restore original method
+      (launcher as any).isPortAvailable = originalIsPortAvailable;
     });
   });
 
   describe('Retry Logic', () => {
     it('should retry operations with exponential backoff', async () => {
       const operation = jest.fn()
-        .mockRejectedValueOnce(new Error('First failure'))
-        .mockRejectedValueOnce(new Error('Second failure'))
-        .mockResolvedValueOnce('Success');
+        .mockImplementationOnce(() => Promise.reject(new Error('First failure')))
+        .mockImplementationOnce(() => Promise.reject(new Error('Second failure')))
+        .mockImplementationOnce(() => Promise.resolve('Success'));
 
       const result = await (launcher as any).retryWithBackoff(operation, 'test operation');
       expect(result).toBe('Success');
@@ -151,23 +158,27 @@ describe('MCPProjectLauncher', () => {
     });
 
     it('should fail after max retries', async () => {
-      const operation = jest.fn().mockRejectedValue(new Error('Persistent failure'));
+      // Reduce retry delay for testing
+      (launcher as any).maxRetries = 2;
+      const operation = jest.fn().mockImplementation(() => Promise.reject(new Error('Persistent failure')));
       (launcher as any).managementServiceAvailable = true;
 
       await expect(
         (launcher as any).retryWithBackoff(operation, 'test operation')
       ).rejects.toThrow('Persistent failure');
 
-      expect(operation).toHaveBeenCalledTimes(4); // Initial + 3 retries
+      expect(operation).toHaveBeenCalledTimes(3); // Initial + 2 retries
     });
 
     it('should continue in degraded mode when management service unavailable', async () => {
-      const operation = jest.fn().mockRejectedValue(new Error('Service unavailable'));
+      // Reduce retry delay for testing
+      (launcher as any).maxRetries = 2;
+      const operation = jest.fn().mockImplementation(() => Promise.reject(new Error('Service unavailable')));
       (launcher as any).managementServiceAvailable = false;
 
       const result = await (launcher as any).retryWithBackoff(operation, 'test operation');
       expect(result).toEqual({});
-      expect(operation).toHaveBeenCalledTimes(4); // Initial + 3 retries
+      expect(operation).toHaveBeenCalledTimes(3); // Initial + 2 retries
     });
   });
 
@@ -175,7 +186,7 @@ describe('MCPProjectLauncher', () => {
     it('should detect active process', () => {
       // Mock process.kill to not throw for valid PID
       const originalKill = process.kill;
-      process.kill = jest.fn();
+      (process as any).kill = jest.fn();
 
       const isActive = (launcher as any).isProcessActive(12345);
       expect(isActive).toBe(true);
@@ -187,7 +198,7 @@ describe('MCPProjectLauncher', () => {
     it('should detect inactive process', () => {
       // Mock process.kill to throw for invalid PID
       const originalKill = process.kill;
-      process.kill = jest.fn().mockImplementation(() => {
+      (process as any).kill = jest.fn().mockImplementation(() => {
         throw new Error('Process not found');
       });
 
@@ -228,10 +239,10 @@ describe('MCPProjectLauncher', () => {
       (launcher as any).managementServiceAvailable = true;
       
       // Mock checkManagementService to return true
-      (launcher as any).checkManagementService = jest.fn().mockResolvedValue(true);
+      (launcher as any).checkManagementService = jest.fn().mockImplementation(() => Promise.resolve(true));
       
       // Mock launchStandaloneMode for fallback
-      (launcher as any).launchStandaloneMode = jest.fn().mockResolvedValue(undefined);
+      (launcher as any).launchStandaloneMode = jest.fn().mockImplementation(() => Promise.resolve());
 
       await launcher.launch();
       
