@@ -4,13 +4,33 @@ This document tracks all outstanding TODOs in the multi-agent system codebase, o
 
 ## 🚨 High Priority (Core Functionality)
 
-### 1. Redesign MCP Agent Tool Integration
-- **File**: Multiple agent implementation files
-- **Description**: MCP agents are not properly using Claude Code reasoning and tools. Need to revisit agent design and tool presentation to MCP client
+### 0. Implement Configurable Persona Tool Permissions
+- **File**: `src/persona-modes.js`, `docs/CONFIGURABLE_PERSONA_TOOLS.md`
+- **Description**: Replace hardcoded tool permissions with role-based defaults and optional per-persona configuration files. Currently all personas get the same tools regardless of their role requirements.
+- **GitHub Issue**: [#16](https://github.com/jasonhanna/multi-agent/issues/16)
+- **Documentation**: [CONFIGURABLE_PERSONA_TOOLS.md](docs/CONFIGURABLE_PERSONA_TOOLS.md)
+- **Impact**: High - Security and usability improvement for persona tool access
+- **Effort**: Medium (1-2 weeks)
+- **Dependencies**: None - standalone improvement
+- **Key Components**:
+  - Role-based default tool sets (engineering-manager, product-manager, qa-manager)
+  - Optional `tools.json` configuration files in persona directories
+  - Configuration resolution logic with fallback defaults
+  - Tool permission validation and error handling
+
+### 1. Implement True Split Architecture
+- **File**: System-wide architectural overhaul
+- **Description**: Current implementation deviates from split architecture design. Missing per-project Claude Code instances and global persona servers. Need complete rewrite to match intended design.
 - **GitHub Issue**: [#14](https://github.com/jasonhanna/multi-agent/issues/14) - Redesign MCP agent tool integration
-- **Impact**: Critical - Agents not functioning as intended with Claude Code
-- **Effort**: Large (8-12 hours)
-- **Dependencies**: MCP server architecture, agent persona definitions
+- **Implementation Plan**: [SPLIT_ARCHITECTURE_IMPLEMENTATION_PLAN.md](docs/SPLIT_ARCHITECTURE_IMPLEMENTATION_PLAN.md)
+- **Impact**: Critical - Fundamental architecture mismatch prevents proper agent functionality
+- **Effort**: Very Large (6-7 weeks, 42+ hours)
+- **Dependencies**: Claude Code subprocess management, global persona servers, memory synchronization
+- **Key Components**:
+  - Global Persona Servers (ports 3001-3003) for memory/personality management
+  - Per-project Claude Code instances as MCP servers in project directories  
+  - Project-persona bridge for HTTP communication between layers
+  - Memory synchronization between global and project contexts
 
 ### 2. Implement MessageBroker Message Recovery
 - **File**: `src/messaging/message-broker.ts:467`
@@ -95,7 +115,7 @@ This document tracks all outstanding TODOs in the multi-agent system codebase, o
 - **High Priority**: 4 (44.4%)
 - **Medium Priority**: 3 (33.3%)
 - **Low Priority**: 2 (22.2%)
-- **Estimated Total Effort**: 29-45 hours
+- **Estimated Total Effort**: 63-87 hours (includes major architecture rewrite)
 
 ## 🔄 Maintenance Guidelines
 
@@ -117,9 +137,13 @@ This document tracks all outstanding TODOs in the multi-agent system codebase, o
 
 ## 📝 Next Actions
 
-1. Create GitHub issues for all 9 current TODOs
-2. Update existing Issue #3 with current context
-3. Begin implementation of high-priority items
+1. **PRIORITY 1**: Begin Split Architecture Implementation (see [implementation plan](docs/SPLIT_ARCHITECTURE_IMPLEMENTATION_PLAN.md))
+   - Phase 1: Global Persona Servers (Weeks 1-2)
+   - Phase 2: Project Claude Code Instances (Weeks 3-4)  
+   - Phase 3: Communication Layer (Week 5)
+   - Phase 4: Integration & Testing (Week 6)
+2. Create detailed GitHub issues for split architecture components
+3. Update existing Issue #3 with current context
 4. Set up automated TODO tracking (optional)
 
 ---

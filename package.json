@@ -8,15 +8,23 @@
     "claude-agents": "dist/cli-tool.js"
   },
   "scripts": {
-    "build": "tsc && chmod +x dist/standalone-agent.js && chmod +x dist/start-persona-service.js && chmod +x dist/mcp-project-launcher.js && chmod +x dist/project-agent-server.js && chmod +x dist/cli-tool.js && npm run generate-config",
+    "build": "tsc && chmod +x dist/standalone-agent.js && chmod +x dist/start-persona-service.js && chmod +x dist/mcp-project-launcher.js && chmod +x dist/project-agent-server.js && chmod +x dist/cli-tool.js && chmod +x dist/start-global-personas.js && npm run generate-config",
     "generate-config": "node scripts/generate-claude-config.js",
     "setup-mcp": "tsx scripts/setup-mcp.ts",
     "agent": "node dist/standalone-agent.js",
     "persona-service": "tsx src/start-persona-service.ts",
     "persona-service:prod": "node dist/start-persona-service.js",
+    "global-personas": "tsx src/start-global-personas.ts",
+    "global-personas:prod": "node dist/start-global-personas.js",
+    "global-personas:health": "node dist/start-global-personas.js --health-check",
     "mcp-launcher": "node dist/mcp-project-launcher.js",
     "project-agent": "node dist/project-agent-server.js",
     "status": "node scripts/check-status.js",
+    "init-personas": "node scripts/init-personas.js",
+    "reset-personas": "node scripts/reset-personas.js",
+    "init-project-personas": "node scripts/init-project-personas.js",
+    "launch-persona": "node src/persona-instance-launcher.js",
+    "monitor-personas": "node scripts/monitor-personas-simple.js",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage"
@@ -39,6 +47,7 @@
     "jsonwebtoken": "^9.0.2",
     "node-fetch": "^3.3.2",
     "sqlite3": "^5.1.7",
+    "winston": "^3.17.0",
     "ws": "^8.18.2",
     "yaml": "^2.3.0",
     "zod": "^3.22.0"
@@ -72,7 +81,9 @@
       "^(\\.{1,2}/.*)\\.js$": "$1",
       "^@modelcontextprotocol/sdk/(.*)$": "<rootDir>/src/test-utils/mcp-mocks.js"
     },
-    "setupFilesAfterEnv": ["<rootDir>/src/test-utils/jest-setup.ts"],
+    "setupFilesAfterEnv": [
+      "<rootDir>/src/test-utils/jest-setup.ts"
+    ],
     "testEnvironment": "node",
     "testTimeout": 10000,
     "roots": [
