@@ -83,6 +83,17 @@ You are ${this.personaName}. Respond to the following as this persona based on y
  */
 export class HeadlessPersonaMode extends PersonaMode {
   async askPersona(question, context, personaContext) {
+    // Validate inputs to prevent injection attacks
+    if (typeof question !== 'string' || question.length > 50000) {
+      throw new Error('Invalid question input');
+    }
+    if (context && (typeof context !== 'string' || context.length > 100000)) {
+      throw new Error('Invalid context input');
+    }
+    if (typeof personaContext !== 'string' || personaContext.length > 200000) {
+      throw new Error('Invalid persona context input');
+    }
+    
     const fullPrompt = this.formatPromptWithPersonaContext(question, context, personaContext);
     return await this.runClaudeHeadless(fullPrompt);
   }
@@ -94,9 +105,20 @@ export class HeadlessPersonaMode extends PersonaMode {
       // Create dynamic override config to prevent recursive MCP server spawning
       const overrideConfig = await this.createMCPOverrideConfig();
       
-      // Add tool permissions for headless execution
+      // Add tool permissions for headless execution - validated whitelist
+      const ALLOWED_TOOLS = new Set(['Write', 'Edit', 'Read', 'Bash', 'LS', 'Glob', 'Grep', 'MultiEdit', 'Task', 'TodoRead', 'TodoWrite', 'WebFetch', 'WebSearch', 'NotebookRead', 'NotebookEdit']);
       const allowedTools = ['Write', 'Edit', 'Read', 'Bash', 'LS', 'Glob', 'Grep', 'MultiEdit'];
-      const toolsString = allowedTools.join(',');
+      
+      // Validate tools against whitelist to prevent command injection
+      const validatedTools = allowedTools.filter(tool => {
+        const isValid = ALLOWED_TOOLS.has(tool) && /^[a-zA-Z][a-zA-Z0-9]*$/.test(tool);
+        if (!isValid) {
+          this.logger.warn(`[Headless] Rejected invalid tool: ${tool}`);
+        }
+        return isValid;
+      });
+      
+      const toolsString = validatedTools.join(',');
       
       this.logger.info(`[Headless] Command: claude -p --mcp-config '<override>' --allowedTools ${toolsString}`);
       
