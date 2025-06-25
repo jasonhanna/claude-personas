@@ -39,3 +39,21 @@ Thumbs.db
 
 # Archive (development files)
 .archive/
+.claude-agents/engineering-manager/CLAUDE.md
+.claude-agents/engineering-manager/mcp-server.js
+.claude-agents/product-manager/CLAUDE.md
+.claude-agents/product-manager/mcp-server.js
+.claude-agents/qa-manager/CLAUDE.md
+.claude-agents/qa-manager/mcp-server.js
+poc/test-claude-spawn.js
+test-project/.mcp.json
+test-project/README.md
+test-project/.claude-agents/engineering-manager/CLAUDE.md
+test-project/.claude-agents/engineering-manager/mcp-server.js
+test-mode-configuration.js
+.gitignore
+test-headless-persona.js
+service-output.log
+persona-service.log
+
+.mcp.json
