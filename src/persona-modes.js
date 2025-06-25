@@ -10,6 +10,12 @@ import { spawn } from 'child_process';
 import { promises as fs } from 'fs';
 import path from 'path';
 import { createLogger } from '../dist/utils/logger.js';
+import { 
+  getDefaultToolsForPersona, 
+  validateTools, 
+  extractPersonaType, 
+  MINIMAL_TOOL_SET 
+} from './defaults/persona-tool-sets.js';
 
 /**
  * Base class for persona execution modes
@@ -74,6 +80,133 @@ You are ${this.personaName}. Respond to the following as this persona based on y
       return { mcpServers: {} };
     }
   }
+
+  /**
+   * Load tool permissions for this persona
+   * Configuration resolution order:
+   * 1. Per-persona tools.json file (highest priority)
+   * 2. Role-based defaults from persona type
+   * 3. Minimal safe fallback (lowest priority)
+   */
+  async loadToolPermissions() {
+    const personaType = extractPersonaType(this.personaName);
+    this.logger.debug(`Extracted persona type: ${personaType} from name: ${this.personaName}`);
+    
+    // Step 1: Try to load per-persona tools.json configuration
+    const toolsConfigPath = path.join(this.personaDir, 'tools.json');
+    try {
+      const toolsConfigContent = await fs.readFile(toolsConfigPath, 'utf-8');
+      const toolsConfig = JSON.parse(toolsConfigContent);
+      
+      // Validate configuration structure
+      if (typeof toolsConfig !== 'object' || toolsConfig === null) {
+        throw new Error('tools.json must contain a valid JSON object');
+      }
+      
+      const configResult = this.mergeToolConfiguration(toolsConfig, personaType);
+      if (configResult.tools.length > 0) {
+        this.logger.info(`Loaded ${configResult.tools.length} tools from persona config: ${configResult.tools.join(', ')}`);
+        if (configResult.warnings.length > 0) {
+          configResult.warnings.forEach(warning => this.logger.warn(warning));
+        }
+        return configResult.tools;
+      }
+    } catch (error) {
+      // File doesn't exist or is invalid - continue to defaults
+      this.logger.debug(`No valid tools.json found at ${toolsConfigPath}: ${error.message}`);
+    }
+    
+    // Step 2: Use role-based defaults
+    if (personaType) {
+      const defaultTools = getDefaultToolsForPersona(personaType);
+      const { valid } = validateTools(defaultTools);
+      this.logger.info(`Using default tools for ${personaType}: ${valid.join(', ')}`);
+      return valid;
+    }
+    
+    // Step 3: Fallback to minimal safe set
+    this.logger.warn(`No persona type detected for ${this.personaName}, using minimal tool set`);
+    return [...MINIMAL_TOOL_SET];
+  }
+
+  /**
+   * Merge tool configuration from tools.json with defaults
+   * Supports both simple allowedTools list and advanced allow/disallow configuration
+   * @param {Object} toolsConfig - Parsed tools.json configuration
+   * @param {string} personaType - The persona type for defaults
+   * @returns {Object} { tools: string[], warnings: string[] }
+   */
+  mergeToolConfiguration(toolsConfig, personaType) {
+    const warnings = [];
+    let finalTools = [];
+    
+    // Get default tools as starting point
+    const defaultTools = personaType ? getDefaultToolsForPersona(personaType) : [...MINIMAL_TOOL_SET];
+    
+    // Handle simple allowedTools configuration
+    if (toolsConfig.allowedTools && Array.isArray(toolsConfig.allowedTools)) {
+      const { valid, invalid } = validateTools(toolsConfig.allowedTools);
+      
+      if (invalid.length > 0) {
+        warnings.push(`Invalid tools in allowedTools: ${invalid.join(', ')}`);
+      }
+      
+      finalTools = [...valid];
+    } else {
+      // Start with defaults for advanced configuration
+      finalTools = [...defaultTools];
+    }
+    
+    // Handle disallowedTools (remove from current set)
+    if (toolsConfig.disallowedTools && Array.isArray(toolsConfig.disallowedTools)) {
+      const { valid: validDisallowed, invalid: invalidDisallowed } = validateTools(toolsConfig.disallowedTools);
+      
+      if (invalidDisallowed.length > 0) {
+        warnings.push(`Invalid tools in disallowedTools: ${invalidDisallowed.join(', ')}`);
+      }
+      
+      // Remove disallowed tools
+      finalTools = finalTools.filter(tool => !validDisallowed.includes(tool));
+      
+      if (validDisallowed.length > 0) {
+        warnings.push(`Removed disallowed tools: ${validDisallowed.join(', ')}`);
+      }
+    }
+    
+    // Handle additionalTools (add to current set)
+    if (toolsConfig.additionalTools && Array.isArray(toolsConfig.additionalTools)) {
+      const { valid: validAdditional, invalid: invalidAdditional } = validateTools(toolsConfig.additionalTools);
+      
+      if (invalidAdditional.length > 0) {
+        warnings.push(`Invalid tools in additionalTools: ${invalidAdditional.join(', ')}`);
+      }
+      
+      // Add additional tools (avoiding duplicates)
+      validAdditional.forEach(tool => {
+        if (!finalTools.includes(tool)) {
+          finalTools.push(tool);
+        }
+      });
+      
+      if (validAdditional.length > 0) {
+        warnings.push(`Added additional tools: ${validAdditional.join(', ')}`);
+      }
+    }
+    
+    // Ensure we always have at least the minimal safe set
+    if (finalTools.length === 0) {
+      warnings.push('No valid tools after configuration merge, falling back to minimal set');
+      finalTools = [...MINIMAL_TOOL_SET];
+    }
+    
+    // Log configuration summary if we have a complex configuration
+    const hasComplexConfig = toolsConfig.disallowedTools || toolsConfig.additionalTools;
+    if (hasComplexConfig) {
+      warnings.push(`Configuration merge completed: ${finalTools.length} tools active`);
+    }
+    
+    return { tools: finalTools, warnings };
+  }
 }
 
 /**
@@ -105,20 +238,26 @@ export class HeadlessPersonaMode extends PersonaMode {
       // Create dynamic override config to prevent recursive MCP server spawning
       const overrideConfig = await this.createMCPOverrideConfig();
       
-      // Add tool permissions for headless execution - validated whitelist
-      const ALLOWED_TOOLS = new Set(['Write', 'Edit', 'Read', 'Bash', 'LS', 'Glob', 'Grep', 'MultiEdit', 'Task', 'TodoRead', 'TodoWrite', 'WebFetch', 'WebSearch', 'NotebookRead', 'NotebookEdit']);
-      const allowedTools = ['Write', 'Edit', 'Read', 'Bash', 'LS', 'Glob', 'Grep', 'MultiEdit'];
+      // Load persona-specific tool permissions
+      const allowedTools = await this.loadToolPermissions();
       
       // Validate tools against whitelist to prevent command injection
-      const validatedTools = allowedTools.filter(tool => {
-        const isValid = ALLOWED_TOOLS.has(tool) && /^[a-zA-Z][a-zA-Z0-9]*$/.test(tool);
+      const { valid: validatedTools, invalid } = validateTools(allowedTools);
+      
+      if (invalid.length > 0) {
+        this.logger.warn(`[Headless] Rejected invalid tools: ${invalid.join(', ')}`);
+      }
+      
+      // Additional regex validation for command injection prevention
+      const safeTools = validatedTools.filter(tool => {
+        const isValid = /^[a-zA-Z][a-zA-Z0-9]*$/.test(tool);
         if (!isValid) {
-          this.logger.warn(`[Headless] Rejected invalid tool: ${tool}`);
+          this.logger.warn(`[Headless] Rejected tool with invalid format: ${tool}`);
         }
         return isValid;
       });
       
-      const toolsString = validatedTools.join(',');
+      const toolsString = safeTools.join(',');
       
       this.logger.info(`[Headless] Command: claude -p --mcp-config '<override>' --allowedTools ${toolsString}`);
       
