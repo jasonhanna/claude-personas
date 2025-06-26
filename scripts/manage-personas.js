@@ -26,6 +26,48 @@ class PersonaManager {
   }
 
   /**
+   * Validate project path for security
+   */
+  validateProjectPath(projectPath) {
+    // Check for null/empty
+    if (!projectPath || typeof projectPath !== 'string') {
+      throw new Error('Project path must be a non-empty string');
+    }
+
+    // Check for path traversal in the original path
+    if (projectPath.includes('..')) {
+      throw new Error('Invalid project path: path traversal detected');
+    }
+
+    // Resolve to absolute path to prevent path traversal
+    const resolvedPath = path.resolve(projectPath);
+    
+    // Check for dangerous system directories (be specific to avoid false positives)
+    const dangerousDirs = ['/etc/', '/usr/bin/', '/usr/sbin/', '/sys/', '/proc/', '/dev/', '/bin/', '/sbin/'];
+    
+    for (const dangerousDir of dangerousDirs) {
+      if (resolvedPath.startsWith(dangerousDir) || resolvedPath === dangerousDir.slice(0, -1)) {
+        throw new Error(`Invalid project path: contains dangerous pattern '${dangerousDir.slice(0, -1)}'`);
+      }
+    }
+
+    // Ensure path exists and is a directory
+    try {
+      const stats = fs.statSync(resolvedPath);
+      if (!stats.isDirectory()) {
+        throw new Error('Project path must be a directory');
+      }
+    } catch (error) {
+      if (error.code === 'ENOENT') {
+        throw new Error(`Project directory does not exist: ${resolvedPath}`);
+      }
+      throw error;
+    }
+
+    return resolvedPath;
+  }
+
+  /**
    * Main entry point for persona management
    */
   async manage(action, options = {}) {
@@ -36,9 +78,13 @@ class PersonaManager {
       }
 
       // Determine target file
-      const targetFile = options.project 
-        ? path.join(options.project, 'CLAUDE.md')
-        : this.userMemoryFile;
+      let targetFile;
+      if (options.project) {
+        const validatedProjectPath = this.validateProjectPath(options.project);
+        targetFile = path.join(validatedProjectPath, 'CLAUDE.md');
+      } else {
+        targetFile = this.userMemoryFile;
+      }
 
       // Execute action
       switch (action) {

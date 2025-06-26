@@ -409,4 +409,57 @@ describe('Persona Scripts CLI', () => {
       fs.chmodSync(readOnlyDir, 0o755);
     });
   });
+
+  describe('path validation', () => {
+    beforeEach(() => {
+      // Install personas first
+      const installResult = runScript('install-personas.js');
+      expect(installResult.success).toBe(true);
+    });
+
+    test('should reject path traversal attempts', () => {
+      const result = runScript('manage-personas.js', ['add', '--project', '../../../etc']);
+      expect(result.success).toBe(false);
+      expect(result.error || result.output).toContain('Invalid project path');
+    });
+
+    test('should reject system directory paths', () => {
+      const result = runScript('manage-personas.js', ['add', '--project', '/etc']);
+      expect(result.success).toBe(false);
+      expect(result.error || result.output).toContain('Invalid project path');
+    });
+
+    test('should reject non-existent directories', () => {
+      const nonExistentPath = path.join(testDir, 'non-existent-project');
+      const result = runScript('manage-personas.js', ['add', '--project', nonExistentPath]);
+      expect(result.success).toBe(false);
+      expect(result.error || result.output).toContain('Project directory does not exist');
+    });
+
+    test('should accept valid project directory', () => {
+      // Create a valid test project directory
+      const validProject = path.join(testDir, 'valid-project');
+      fs.mkdirSync(validProject, { recursive: true });
+      
+      const result = runScript('manage-personas.js', ['add', '--project', validProject]);
+      expect(result.success).toBe(true);
+      expect(fs.existsSync(path.join(validProject, 'CLAUDE.md'))).toBe(true);
+    });
+
+    test('should reject relative path with traversal', () => {
+      const result = runScript('manage-personas.js', ['add', '--project', './../../etc']);
+      expect(result.success).toBe(false);
+      expect(result.error || result.output).toContain('Invalid project path');
+    });
+
+    test('should handle file instead of directory', () => {
+      // Create a file instead of directory
+      const filePath = path.join(testDir, 'test-file.txt');
+      fs.writeFileSync(filePath, 'test content');
+      
+      const result = runScript('manage-personas.js', ['add', '--project', filePath]);
+      expect(result.success).toBe(false);
+      expect(result.error || result.output).toContain('Project path must be a directory');
+    });
+  });
 });
