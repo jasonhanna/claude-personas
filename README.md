@@ -7,9 +7,10 @@ A sophisticated framework for deploying Claude Code agents with distinct persona
 ## 🌟 Key Features
 
 - **🎭 Multiple Agent Personas**: Pre-configured engineering manager, product manager, and QA manager personas
+- **🔒 Configurable Tool Permissions**: Role-based security with customizable per-persona tool access
 - **🏗️ Split Architecture**: Global persona management + per-project persona instances
 - **⚡ Dual Execution Modes**: Choose between simple headless mode or advanced PTY sessions
-- **🔥 Claude Code Headless Opperation**: Uses `claude -p` flag for stateless execution (default)
+- **🔥 Claude Code Headless Operation**: Uses `claude -p` flag for stateless execution (default)
 - **🧠 Intelligent Context Injection**: Persona context dynamically loaded per interaction
 - **💾 Project-Specific Memory**: Persistent memory storage within project contexts
 - **🛠️ CLI Management**: Command-line interface for project initialization and management
@@ -53,6 +54,70 @@ claude
 # Then ask: "Ask the engineering manager about our architecture"
 ```
 
+## 🎯 How to Customize Tool Permissions
+
+After initializing personas, you can customize which tools each persona can use:
+
+### 1. Check Current Permissions
+Each persona starts with role-appropriate defaults:
+- **Engineering Manager**: Full development tools (Write, Edit, Bash, etc.)
+- **Product Manager**: Read-only + research tools (Read, WebFetch, etc.)
+- **QA Manager**: Testing tools (Write, Edit, Bash, etc.)
+
+### 2. Create Custom Configuration
+To customize a persona's tools, create a `tools.json` file in their directory:
+
+```bash
+# Example: Restrict product manager to read-only
+cat > .claude-agents/product-manager/tools.json << 'EOF'
+{
+  "allowedTools": ["Read", "LS", "Grep"],
+  "comments": "Read-only access for security"
+}
+EOF
+
+# Example: Remove shell access from QA manager
+cat > .claude-agents/qa-manager/tools.json << 'EOF'
+{
+  "disallowedTools": ["Bash"],
+  "additionalTools": ["WebFetch"],
+  "comments": "No shell access, but can research testing practices"
+}
+EOF
+```
+
+### 3. Test Your Configuration
+```bash
+# The persona will automatically use new permissions on next interaction
+claude
+> Ask the product manager to analyze this file
+# Will only use Read, LS, Grep tools as configured
+```
+
+### 4. Common Configurations
+
+**Read-Only Reviewer:**
+```json
+{ "allowedTools": ["Read", "LS", "Glob", "Grep"] }
+```
+
+**Web Research Analyst:**
+```json
+{ "allowedTools": ["Read", "LS", "WebFetch", "WebSearch"] }
+```
+
+**No Shell Access:**
+```json
+{ "disallowedTools": ["Bash"] }
+```
+
+**Enhanced with Web Research:**
+```json
+{ "additionalTools": ["WebFetch", "WebSearch"] }
+```
+
+See [`examples/tool-configurations/`](./examples/tool-configurations/) for more examples.
+
 ## 🎯 Execution Modes
 
 ### Headless Mode (Default)
@@ -66,7 +131,7 @@ claude
 - **Complex**: Requires PTY automation and session management
 - **Dependencies**: Requires `node-pty` package
 
-```
+
 ## 🏗️ Architecture Overview
 
 ### Split Architecture Design
@@ -196,20 +261,60 @@ claude "Ask the qa manager to design comprehensive test plan for checkout flow"
 
 ## 🔒 Security & Permissions
 
-### Tool Access Control
+### Configurable Tool Access Control
 
-Each persona runs with configurable tool permissions for security and role separation:
+Each persona runs with role-based tool permissions that can be customized per project for security and role separation:
 
-#### Current Default Permissions
+#### Default Role-Based Permissions ✅
 ```javascript
-// All personas currently receive the same tools:
-allowedTools: ['Write', 'Edit', 'Read', 'Bash', 'LS', 'Glob', 'Grep', 'MultiEdit']
+// Engineering Manager (15 tools)
+allowedTools: ['Write', 'Edit', 'Read', 'MultiEdit', 'LS', 'Glob', 'Grep', 'Bash', 
+              'Task', 'TodoRead', 'TodoWrite', 'NotebookRead', 'NotebookEdit', 
+              'WebFetch', 'WebSearch']
+
+// Product Manager (11 tools) 
+allowedTools: ['Read', 'LS', 'Glob', 'Grep', 'Task', 'TodoRead', 'TodoWrite',
+              'WebFetch', 'WebSearch', 'NotebookRead', 'NotebookEdit']
+
+// QA Manager (15 tools)
+allowedTools: ['Write', 'Edit', 'Read', 'MultiEdit', 'LS', 'Glob', 'Grep', 'Bash',
+              'Task', 'TodoRead', 'TodoWrite', 'WebFetch', 'WebSearch', 
+              'NotebookRead', 'NotebookEdit']
 ```
 
-#### Planned Role-Based Permissions (GitHub Issue #16)
-- **Engineering Manager**: Full development tools (Write, Edit, Read, Bash, Git, Docker)
-- **Product Manager**: Read-only analysis + web research (Read, LS, WebFetch, WebSearch)  
-- **QA Manager**: Testing and validation tools (Write, Edit, Read, Bash, test runners)
+#### Custom Tool Configuration
+
+You can override default permissions by creating a `tools.json` file in any persona directory:
+
+**Simple Override (`.claude-agents/product-manager/tools.json`):**
+```json
+{
+  "allowedTools": ["Read", "LS", "Grep"],
+  "comments": "Read-only product manager"
+}
+```
+
+**Advanced Configuration (`.claude-agents/qa-manager/tools.json`):**
+```json
+{
+  "disallowedTools": ["Bash"],
+  "additionalTools": ["WebFetch"],
+  "comments": "QA manager without shell access but with web research"
+}
+```
+
+#### Configuration Resolution Priority
+1. **Per-persona `tools.json`** (highest priority)
+2. **Role-based defaults** (engineering-manager, product-manager, qa-manager)
+3. **Minimal safe set** (`["Read", "LS", "Glob", "Grep"]`) (fallback)
+
+#### Available Tools
+- **File Operations**: Write, Edit, Read, MultiEdit
+- **File System**: LS, Glob, Grep  
+- **System Operations**: Bash
+- **Task Management**: Task, TodoRead, TodoWrite
+- **Web Research**: WebFetch, WebSearch
+- **Notebooks**: NotebookRead, NotebookEdit
 
 ### File System Access
 
@@ -237,11 +342,13 @@ MCP servers run from the project directory with:
 
 ## 🛠️ Available Personas
 
-| Persona | Name | Role | Tools & Capabilities |
-|---------|------|------|----------------------|
-| `engineering-manager` | Alex Chen | Engineering Manager | Full development stack, architecture analysis, code review |
-| `product-manager` | Sarah Martinez | Product Manager | Requirements analysis, user stories, roadmap planning |
-| `qa-manager` | Marcus Johnson | QA Manager | Testing strategy, quality assurance, bug tracking |
+| Persona | Name | Role | Default Tools (Configurable) |
+|---------|------|------|-------------------------------|
+| `engineering-manager` | Alex Chen | Engineering Manager | 15 tools: Full development stack (Write, Edit, Bash, Web research) |
+| `product-manager` | Sarah Martinez | Product Manager | 11 tools: Read-only analysis + web research (Read, LS, WebFetch) |
+| `qa-manager` | Marcus Johnson | QA Manager | 15 tools: Testing & validation (Write, Edit, Bash, Web research) |
+
+> 💡 **Tip**: All tool permissions can be customized per-project using `tools.json` files
 
 ## 📋 MCP Tools Available
 
@@ -301,7 +408,7 @@ npm test -- --testNamePattern="MCP Server"
 npm test -- --testNamePattern="Persona Management"
 npm test -- --testNamePattern="Context Manager"
 ```
-```
+
 
 For detailed testing instructions, see [TESTING_GUIDE.md](./docs/TESTING_GUIDE.md).
 

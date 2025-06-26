@@ -1,0 +1,5 @@
+{
+  "disallowedTools": ["Bash"],
+  "additionalTools": ["WebFetch", "WebSearch"],
+  "comments": "QA manager without shell access but with enhanced web research"
+}
