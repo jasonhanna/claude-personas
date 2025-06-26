@@ -1,33 +1,22 @@
 # Dependencies
 node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
+*-debug.log*
+*-error.log*
 
-# Build output
+# Build and test output
 dist/
+coverage/
 
-# Runtime files
-logs/
-agents/
-shared_knowledge.json
-runtime/
-.jwt-secret
-
-# Environment files
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+# Development files
+*.log
+.env*
+*.local
 
 # OS generated files
-.DS_Store
-.DS_Store?
+.DS_Store*
 ._*
 .Spotlight-V100
 .Trashes
-ehthumbs.db
 Thumbs.db
 
 # IDE files
@@ -37,23 +26,9 @@ Thumbs.db
 *.swo
 *~
 
-# Archive (development files)
+# Development artifacts
 .archive/
-.claude-agents/engineering-manager/CLAUDE.md
-.claude-agents/engineering-manager/mcp-server.js
-.claude-agents/product-manager/CLAUDE.md
-.claude-agents/product-manager/mcp-server.js
-.claude-agents/qa-manager/CLAUDE.md
-.claude-agents/qa-manager/mcp-server.js
-poc/test-claude-spawn.js
-test-project/.mcp.json
-test-project/README.md
-test-project/.claude-agents/engineering-manager/CLAUDE.md
-test-project/.claude-agents/engineering-manager/mcp-server.js
-test-mode-configuration.js
-.gitignore
-test-headless-persona.js
-service-output.log
-persona-service.log
-
-.mcp.json
+.claude-agents/
+test-*/
+poc/
+*.mcp.json

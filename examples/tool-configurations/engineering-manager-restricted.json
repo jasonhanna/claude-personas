@@ -1,5 +1,0 @@
-{
-  "disallowedTools": ["Bash"],
-  "additionalTools": ["WebFetch"],
-  "comments": "Engineering manager without shell access but with web research"
-}

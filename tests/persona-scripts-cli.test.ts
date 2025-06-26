@@ -100,6 +100,7 @@ describe('Persona Scripts CLI', () => {
         cwd: path.join(__dirname, '..'),
         env: { ...process.env, HOME: testDir },
         encoding: 'utf8',
+        stdio: ['pipe', 'pipe', 'pipe'], // Capture stdout and stderr
         ...options
       });
       return { success: true, output: result, error: null };
@@ -278,7 +279,8 @@ describe('Persona Scripts CLI', () => {
     test('should run install-personas via npm', () => {
       const result = execSync('npm run install-personas', {
         env: { ...process.env, HOME: testDir },
-        encoding: 'utf8'
+        encoding: 'utf8',
+        stdio: ['pipe', 'pipe', 'pipe']
       });
       
       expect(result).toContain('Installing personas');
@@ -289,13 +291,15 @@ describe('Persona Scripts CLI', () => {
       // Install first
       execSync('npm run install-personas', {
         env: { ...process.env, HOME: testDir },
-        encoding: 'utf8'
+        encoding: 'utf8',
+        stdio: ['pipe', 'pipe', 'pipe']
       });
       
       // Add to user memory
       const result = execSync('npm run add-personas', {
         env: { ...process.env, HOME: testDir },
-        encoding: 'utf8'
+        encoding: 'utf8',
+        stdio: ['pipe', 'pipe', 'pipe']
       });
       
       expect(result).toContain('Adding personas to memory');
@@ -306,12 +310,14 @@ describe('Persona Scripts CLI', () => {
       // Install first
       execSync('npm run install-personas', {
         env: { ...process.env, HOME: testDir },
-        encoding: 'utf8'
+        encoding: 'utf8',
+        stdio: ['pipe', 'pipe', 'pipe']
       });
       
       const result = execSync('npm run personas-status', {
         env: { ...process.env, HOME: testDir },
-        encoding: 'utf8'
+        encoding: 'utf8',
+        stdio: ['pipe', 'pipe', 'pipe']
       });
       
       expect(result).toContain('✅ Personas installed');

@@ -1,6 +1,0 @@
-{
-  "allowedTools": [
-    "Read", "LS", "Glob", "Grep", "WebFetch", "WebSearch"
-  ],
-  "comments": "Product manager with read-only access and web research capabilities"
-}
