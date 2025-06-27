@@ -1,8 +1,8 @@
 # 🎭 Claude Code Personas
 
-> Add AI specialists to your development workflow with simple memory imports
+> Add specialist AI perspectives to improve your developed code and product
 
-Transform your Claude Code experience by adding specialized AI personas - an **Engineering Manager**, **Product Manager**, and **QA Manager** - that provide expert guidance tailored to their roles. No complex setup, no servers to manage, just instant access to domain expertise.
+Enhance your Claude Code experience by adding specialized AI personas (e.g. **Engineering Manager**, **Product Manager**, **QA Manager**) for expert guidance tailored to their roles. No complex setup, no servers to manage, just instant access to domain expertise.
 
 ## ✨ What This Does
 
@@ -20,7 +20,7 @@ Once installed, simply ask any persona for help:
 
 ```bash
 claude "Ask the engineering manager to review this API design"
-claude "Ask the product manager to help prioritize these features"
+claude "Ask Sarah to help prioritize these features"
 claude "Ask the QA manager to design a comprehensive test plan"
 ```
 
@@ -81,9 +81,9 @@ claude "Ask the QA manager to identify edge cases we should test for user authen
 
 ### Collaborative Workflow
 ```bash
-claude "Ask all three personas to review our mobile app architecture proposal"
+claude "Create parallel tasks for Alex, Sarah, and Marcus to review this latest pull request, leaving comments on the PR"
 ```
-*Get technical, product, and quality perspectives in one comprehensive review*
+*Get technical, product, and quality perspectives in a single step*
 
 ## 🛠️ Management Commands
 
@@ -107,7 +107,7 @@ npm run remove-personas-from-project -- /path/to/project
 
 ## 🎨 Customization
 
-### Edit Personas
+### Edit Existing Personas
 Personas are stored as markdown files in `~/.claude-agents/personas/`. Edit them to:
 - Adjust personality and communication style
 - Add project-specific context
@@ -119,10 +119,119 @@ Personas are stored as markdown files in `~/.claude-agents/personas/`. Edit them
 open ~/.claude-agents/personas/engineering-manager.md
 ```
 
-### Create New Personas
-1. Create a new `.md` file in `~/.claude-agents/personas/`
-2. Follow the existing format (see persona files for examples)
-3. Run `npm run update-personas` to include in memory imports
+### Create Custom Personas
+
+You can create your own personas for any role you need! Simply add new `.md` files to `~/.claude-agents/personas/` and they'll be automatically discovered.
+
+#### Step-by-Step Process
+
+1. **Create the persona file**
+```bash
+# Create a new persona file
+touch ~/.claude-agents/personas/security-engineer.md
+```
+
+2. **Follow the persona format** (see template below)
+
+3. **Update your memory imports**
+```bash
+npm run update-personas  # Adds new persona to your memory
+```
+
+4. **Start using your new persona**
+```bash
+claude "Ask the security engineer to review this authentication flow"
+```
+
+#### Persona Template
+
+Create personas following this proven format:
+
+```markdown
+# Security Engineer - Jordan Kim
+
+## About Me
+Cybersecurity specialist with 12+ years protecting enterprise applications. I believe security should be built in, not bolted on, with a focus on practical, developer-friendly security practices.
+
+## My Core Responsibilities
+- Security architecture design and review
+- Threat modeling and risk assessment
+- Security code review and vulnerability analysis
+- Compliance and regulatory guidance (SOC2, GDPR, etc.)
+- Developer security training and best practices
+- Incident response and forensics
+
+## My Technical Context
+- Focus on OWASP Top 10 and modern attack vectors
+- Zero-trust architecture principles
+- DevSecOps integration with CI/CD pipelines
+- Cloud security (AWS, Azure, GCP) best practices
+- Experience with security tools: SAST, DAST, dependency scanning
+- Minimum security standards: MFA required, encryption at rest/transit
+- Threat modeling using STRIDE methodology
+
+## How I Communicate
+- **Tone**: Security-focused, practical, educational
+- **Focus**: Risk mitigation, compliance, developer enablement
+- **Style**: Clear threat explanations with actionable remediation steps
+
+## My Decision Framework
+When evaluating security concerns, I consider:
+1. **Risk Assessment**: What's the potential impact and likelihood?
+2. **Defense in Depth**: How can we layer multiple protections?
+3. **Developer Experience**: How can we make security easy to do right?
+4. **Compliance**: What regulatory requirements apply?
+5. **Cost vs Risk**: What's the appropriate level of protection?
+```
+
+#### Popular Persona Ideas
+
+Here are some additional personas teams commonly create:
+
+**👨‍💻 DevOps Engineer** - Infrastructure, deployment, monitoring
+```bash
+# Create with: touch ~/.claude-agents/personas/devops-engineer.md
+claude "Ask the DevOps engineer to design a CI/CD pipeline for this microservice"
+```
+
+**🎨 UX Designer** - User experience, interface design, usability
+```bash
+# Create with: touch ~/.claude-agents/personas/ux-designer.md  
+claude "Ask the UX designer to improve the user flow for our onboarding"
+```
+
+**📊 Data Scientist** - Analytics, ML/AI, data insights
+```bash
+# Create with: touch ~/.claude-agents/personas/data-scientist.md
+claude "Ask the data scientist to recommend metrics for this feature"
+```
+
+**🏗️ Solutions Architect** - System design, scalability, integrations
+```bash
+# Create with: touch ~/.claude-agents/personas/solutions-architect.md
+claude "Ask the solutions architect to design a scalable event processing system"
+```
+
+**🔒 Compliance Officer** - Regulatory requirements, audit preparation
+```bash
+# Create with: touch ~/.claude-agents/personas/compliance-officer.md
+claude "Ask the compliance officer to review our data retention policies"
+```
+
+#### Best Practices for Custom Personas
+
+**✅ Do:**
+- Give personas specific expertise areas and years of experience
+- Include their decision-making frameworks and methodologies
+- Add relevant technical context for your industry/domain
+- Define clear communication style and tone
+- Include project memories section for context building
+
+**❌ Avoid:**
+- Generic or overly broad expertise claims
+- Conflicting responsibilities between personas
+- Too many personas (start with 3-5 core roles)
+- Copying existing persona content without customization
 
 ## 🔧 How It Works
 
