@@ -1,20 +1,20 @@
 # 🎭 Claude Code Personas
 
-> Add specialist AI perspectives to improve your developed code and product
+> Ship better code faster with AI personas that think like the best senior engineers.
 
-Enhance your Claude Code experience by adding specialized AI personas (e.g. **Engineering Manager**, **Product Manager**, **QA Manager**) for expert guidance tailored to their roles. No complex setup, no servers to manage, just instant access to domain expertise.
+Get instant code reviews from an Engineering Manager, strategic insights from a Product Manager, and comprehensive QA analysis—all through simple commands. No servers to manage, no complex setup. Just type, ask, and ship better code.
 
 ## ✨ What This Does
 
-This project provides **ready-to-use AI personas** that integrate seamlessly with Claude Code through its native memory import system. Each persona brings specialized knowledge and perspective to your development projects.
+This project provides **ready-to-use AI personas** that easily integrate with Claude Code and its built-in memory import system. Each persona brings specialized knowledge and perspective to your development projects.
 
-### 🎯 Available Personas
+### 🎯 Starter Personas
 
 - **📐 Alex, Engineering Manager** - Technical architecture, code quality, best practices
 - **💡 Sarah, Product Manager** - Requirements analysis, user stories, feature prioritization  
 - **📋 Marcus, QA Manager** - Testing strategies, quality assurance, bug prevention
 
-### 💬 How It Works
+### 💬 How to Use
 
 Once installed, simply ask any persona for help:
 
@@ -41,31 +41,31 @@ git clone https://github.com/jasonhanna/multi-agent.git
 cd multi-agent
 npm install
 
-# 2. Install personas globally
+# 2. Copy personas to your home directory (~/.claude-agents)
 npm run install-personas
 
-# 3. Add to your user memory (works everywhere)
+# 3. Add personas to User memory (~/.claude/CLAUDE.md)
 npm run add-personas
 ```
 
 That's it! 🎉 Now you can ask any persona for help in any Claude Code session.
 
-### Project-Specific Setup (Optional)
+### Per Project Setup (Alternative)
 
 Want personas available only in specific projects? Add them to project memory instead:
 
 ```bash
 # Add to a specific project
-npm run add-personas-to-project -- /path/to/your/project
+npm run add-personas-to-project -- ./path/to/your/project
 ```
 
-## 📖 Usage Examples
+## 📖 Additional Examples
 
 ### Engineering Review
 ```bash
-claude "Ask the engineering manager to review this database schema for scalability issues"
+claude "Ask Alex to review this database schema for scalability issues"
 ```
-*Alex analyzes your schema with 15+ years of system design experience*
+*Leverage the perspective of a seasoned engineering manager to analyze your database design*
 
 ### Feature Planning
 ```bash
@@ -79,11 +79,11 @@ claude "Ask the QA manager to identify edge cases we should test for user authen
 ```
 *Marcus leverages 14+ years of QA experience to suggest comprehensive test scenarios*
 
-### Collaborative Workflow
+### Create Complex Tasks and Parallel Workflow
 ```bash
 claude "Create parallel tasks for Alex, Sarah, and Marcus to review this latest pull request, leaving comments on the PR"
 ```
-*Get technical, product, and quality perspectives in a single step*
+*Unleash the full power of multi-perspective code review: technical depth, product alignment, and quality assurance in one coordinated AI prompt.*
 
 ## 🛠️ Management Commands
 
@@ -108,7 +108,7 @@ npm run remove-personas-from-project -- /path/to/project
 ## 🎨 Customization
 
 ### Edit Existing Personas
-Personas are stored as markdown files in `~/.claude-agents/personas/`. Edit them to:
+Once installed, are stored as markdown files in `~/.claude-agents/personas/`. Edit them to:
 - Adjust personality and communication style
 - Add project-specific context
 - Modify expertise areas
@@ -135,7 +135,7 @@ touch ~/.claude-agents/personas/security-engineer.md
 
 3. **Update your memory imports**
 ```bash
-npm run update-personas  # Adds new persona to your memory
+npm run update-personas  # Adds new persona to your User memory
 ```
 
 4. **Start using your new persona**
@@ -184,9 +184,9 @@ When evaluating security concerns, I consider:
 5. **Cost vs Risk**: What's the appropriate level of protection?
 ```
 
-#### Popular Persona Ideas
+#### New Persona Ideas
 
-Here are some additional personas teams commonly create:
+Here are some additional personas you might consider creating:
 
 **👨‍💻 DevOps Engineer** - Infrastructure, deployment, monitoring
 ```bash
@@ -218,7 +218,7 @@ claude "Ask the solutions architect to design a scalable event processing system
 claude "Ask the compliance officer to review our data retention policies"
 ```
 
-#### Best Practices for Custom Personas
+#### Best Practices for Customizing Personas
 
 **✅ Do:**
 - Give personas specific expertise areas and years of experience
