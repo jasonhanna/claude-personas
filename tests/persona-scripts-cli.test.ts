@@ -109,12 +109,12 @@ describe('Persona Scripts CLI', () => {
     }
   }
 
-  describe('install-personas script', () => {
+  describe('install-templates script', () => {
     test('should install personas successfully', () => {
-      const result = runScript('install-personas.js');
+      const result = runScript('install-templates.js');
       
       expect(result.success).toBe(true);
-      expect(result.output).toContain('Installing personas');
+      expect(result.output).toContain('Installing persona templates');
       
       // Verify files were created
       expect(fs.existsSync(path.join(testPersonasDir, 'engineering-manager.md'))).toBe(true);
@@ -124,20 +124,81 @@ describe('Persona Scripts CLI', () => {
 
     test('should skip existing files on second run', () => {
       // First run
-      runScript('install-personas.js');
+      runScript('install-templates.js');
       
       // Second run
-      const result = runScript('install-personas.js');
+      const result = runScript('install-templates.js');
       
       expect(result.success).toBe(true);
       expect(result.output).toContain('Skipped');
+    });
+
+    test('should update existing templates', () => {
+      // First install
+      runScript('install-templates.js');
+      
+      // Update existing templates
+      const result = runScript('install-templates.js', ['update']);
+      
+      expect(result.success).toBe(true);
+      expect(result.output).toContain('Updating persona templates');
+      expect(result.output).toContain('Updated:');
+      
+      // Verify backup files were created
+      const files = fs.readdirSync(testPersonasDir);
+      const backupFiles = files.filter(f => f.includes('.backup.'));
+      expect(backupFiles.length).toBeGreaterThan(0);
+    });
+
+    test('should remove installed templates', () => {
+      // First install
+      runScript('install-templates.js');
+      
+      // Verify files exist
+      expect(fs.existsSync(path.join(testPersonasDir, 'engineering-manager.md'))).toBe(true);
+      
+      // Remove templates
+      const result = runScript('install-templates.js', ['remove']);
+      
+      expect(result.success).toBe(true);
+      expect(result.output).toContain('Removing persona templates');
+      expect(result.output).toContain('Removed:');
+      
+      // Verify files were removed
+      expect(fs.existsSync(path.join(testPersonasDir, 'engineering-manager.md'))).toBe(false);
+      
+      // Verify backup files were created
+      const files = fs.readdirSync(testPersonasDir);
+      const backupFiles = files.filter(f => f.includes('.backup.'));
+      expect(backupFiles.length).toBeGreaterThan(0);
+    });
+
+    test('should handle update with no templates installed', () => {
+      // Remove the personas directory to simulate no templates installed
+      if (fs.existsSync(testPersonasDir)) {
+        fs.rmSync(testPersonasDir, { recursive: true, force: true });
+      }
+      
+      // Try to update without installing first
+      const result = runScript('install-templates.js', ['update']);
+      
+      expect(result.success).toBe(false);
+      expect(result.output).toContain('No templates installed');
+    });
+
+    test('should handle remove with no templates installed', () => {
+      // Try to remove without installing first
+      const result = runScript('install-templates.js', ['remove']);
+      
+      expect(result.success).toBe(true);
+      expect(result.output).toContain('No templates to remove');
     });
   });
 
   describe('manage-personas script', () => {
     beforeEach(() => {
       // Install personas first
-      runScript('install-personas.js');
+      runScript('install-templates.js');
     });
 
     test('should add personas to user memory', () => {
@@ -235,7 +296,7 @@ describe('Persona Scripts CLI', () => {
 
     test('should show installed status after installation', () => {
       // Install personas
-      runScript('install-personas.js');
+      runScript('install-templates.js');
       
       const result = runScript('persona-status.js');
       
@@ -246,7 +307,7 @@ describe('Persona Scripts CLI', () => {
 
     test('should show configuration status', () => {
       // Install and configure
-      runScript('install-personas.js');
+      runScript('install-templates.js');
       runScript('manage-personas.js', ['add']);
       
       const result = runScript('persona-status.js');
@@ -258,7 +319,7 @@ describe('Persona Scripts CLI', () => {
 
     test('should list available personas', () => {
       // Install personas
-      runScript('install-personas.js');
+      runScript('install-templates.js');
       
       const result = runScript('persona-status.js', ['list']);
       
@@ -276,20 +337,20 @@ describe('Persona Scripts CLI', () => {
       process.chdir(path.join(__dirname, '..'));
     });
 
-    test('should run install-personas via npm', () => {
-      const result = execSync('npm run install-personas', {
+    test('should run install-templates via npm', () => {
+      const result = execSync('npm run install-templates', {
         env: { ...process.env, HOME: testDir },
         encoding: 'utf8',
         stdio: ['pipe', 'pipe', 'pipe']
       });
       
-      expect(result).toContain('Installing personas');
+      expect(result).toContain('Installing persona templates');
       expect(fs.existsSync(path.join(testPersonasDir, 'engineering-manager.md'))).toBe(true);
     });
 
     test('should run add-personas via npm', () => {
       // Install first
-      execSync('npm run install-personas', {
+      execSync('npm run install-templates', {
         env: { ...process.env, HOME: testDir },
         encoding: 'utf8',
         stdio: ['pipe', 'pipe', 'pipe']
@@ -308,7 +369,7 @@ describe('Persona Scripts CLI', () => {
 
     test('should run personas-status via npm', () => {
       // Install first
-      execSync('npm run install-personas', {
+      execSync('npm run install-templates', {
         env: { ...process.env, HOME: testDir },
         encoding: 'utf8',
         stdio: ['pipe', 'pipe', 'pipe']
@@ -322,12 +383,48 @@ describe('Persona Scripts CLI', () => {
       
       expect(result).toContain('✅ Personas installed');
     });
+
+    test('should run update-templates via npm', () => {
+      // Install first
+      execSync('npm run install-templates', {
+        env: { ...process.env, HOME: testDir },
+        encoding: 'utf8',
+        stdio: ['pipe', 'pipe', 'pipe']
+      });
+      
+      // Update templates
+      const result = execSync('npm run update-templates', {
+        env: { ...process.env, HOME: testDir },
+        encoding: 'utf8',
+        stdio: ['pipe', 'pipe', 'pipe']
+      });
+      
+      expect(result).toContain('Updating persona templates');
+    });
+
+    test('should run remove-templates via npm', () => {
+      // Install first
+      execSync('npm run install-templates', {
+        env: { ...process.env, HOME: testDir },
+        encoding: 'utf8',
+        stdio: ['pipe', 'pipe', 'pipe']
+      });
+      
+      // Remove templates
+      const result = execSync('npm run remove-templates', {
+        env: { ...process.env, HOME: testDir },
+        encoding: 'utf8',
+        stdio: ['pipe', 'pipe', 'pipe']
+      });
+      
+      expect(result).toContain('Removing persona templates');
+    });
   });
 
   describe('complete workflow integration', () => {
     test('should complete full workflow: install -> add -> status -> remove', () => {
       // 1. Install
-      const installResult = runScript('install-personas.js');
+      const installResult = runScript('install-templates.js');
       expect(installResult.success).toBe(true);
       expect(fs.existsSync(path.join(testPersonasDir, 'engineering-manager.md'))).toBe(true);
       
@@ -352,7 +449,7 @@ describe('Persona Scripts CLI', () => {
 
     test('should handle project-specific workflow', () => {
       // Install and add to project
-      runScript('install-personas.js');
+      runScript('install-templates.js');
       const addResult = runScript('manage-personas.js', ['add', '--project', testProjectDir]);
       
       expect(addResult.success).toBe(true);
@@ -394,7 +491,7 @@ describe('Persona Scripts CLI', () => {
       }
       
       // Install personas first
-      runScript('install-personas.js');
+      runScript('install-templates.js');
       
       // Create read-only user memory directory
       const readOnlyDir = path.dirname(testUserMemory);
@@ -413,7 +510,7 @@ describe('Persona Scripts CLI', () => {
   describe('path validation', () => {
     beforeEach(() => {
       // Install personas first
-      const installResult = runScript('install-personas.js');
+      const installResult = runScript('install-templates.js');
       expect(installResult.success).toBe(true);
     });
 

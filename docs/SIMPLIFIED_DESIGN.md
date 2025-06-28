@@ -50,7 +50,7 @@ cd multi-agent
 npm install
 
 # 3. Install personas globally
-npm run install-personas
+npm run install-templates
 ```
 
 ### Adding Personas to Memory
@@ -116,7 +116,7 @@ When prompted to perform a task as a user or role, try to match to one of these 
 
 ### Core Scripts
 
-**`scripts/install-personas.js`**
+**`scripts/install-templates.js`**
 - Copy persona files from `personas/` to `~/.claude-agents/personas/`
 - Create directory structure if needed
 - Preserve existing customizations (don't overwrite)
@@ -200,7 +200,7 @@ Since personas are imported via `@path`, Claude Code automatically loads their c
 
 ### From Current MCP System
 1. Export existing persona contexts to `.md` files
-2. Run `npm run install-personas` to copy to standard location
+2. Run `npm run install-templates` to copy to standard location
 3. Run `npm run add-personas --user` to add imports
 4. Remove MCP configuration and servers
 

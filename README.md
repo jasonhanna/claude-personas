@@ -1,8 +1,8 @@
 # 🎭 Claude Code Personas
 
-> Ship better code faster with AI personas that think like the best senior engineers.
+> Ship better products with AI personas that act like your most valuded team members
 
-Get instant code reviews from an Engineering Manager, strategic insights from a Product Manager, and comprehensive QA analysis—all through simple commands. No servers to manage, no complex setup. Just type, ask, and ship better code.
+Get design reviews from an Engineering Manager, strategic insights from a Product Manager, and comprehensive QA analysis using simple prompts. Personas create virtuous feedback loops that bring diverse perspectives to your work. No servers to manage, no complex setup. Just type, ask, and ship better code.
 
 ## ✨ What This Does
 
@@ -42,7 +42,7 @@ cd multi-agent
 npm install
 
 # 2. Copy personas to your home directory (~/.claude-agents)
-npm run install-personas
+npm run install-templates
 
 # 3. Add personas to User memory (~/.claude/CLAUDE.md)
 npm run add-personas
@@ -87,16 +87,24 @@ claude "Create parallel tasks for Alex, Sarah, and Marcus to review this latest 
 
 ## 🛠️ Management Commands
 
-### Status and Information
+### Template Management
 ```bash
-npm run personas-status        # Check installation and configuration
-npm run list-personas         # List available personas
+npm run install-templates     # Install persona templates (~/.claude-agents/personas)
+npm run update-templates      # Update existing templates with backup
+npm run remove-templates      # Remove templates with backup
 ```
 
-### Updates and Changes
+### Memory Management (User & Project)
 ```bash
+npm run add-personas          # Add personas to user memory
 npm run update-personas       # Update persona imports in user memory
 npm run remove-personas       # Remove personas from user memory
+```
+
+### Status and Information
+```bash
+npm run personas-status       # Check installation and configuration
+npm run list-personas         # List available personas
 ```
 
 ### Project-Specific Management
@@ -118,6 +126,64 @@ Once installed, are stored as markdown files in `~/.claude-agents/personas/`. Ed
 # Edit the engineering manager persona
 open ~/.claude-agents/personas/engineering-manager.md
 ```
+
+### Adding Project-Specific Context
+
+**Why This Matters**: Generic personas provide general guidance, but personas with your project's specific context give targeted, actionable advice that considers your actual architecture, tech stack, and constraints.
+
+#### The Power of Project Context
+
+When personas understand your project details, they can:
+- **Give relevant architecture advice** based on your actual tech stack
+- **Suggest realistic testing strategies** for your specific frameworks  
+- **Prioritize features** considering your actual user base and business model
+- **Identify real risks** in your codebase rather than theoretical ones
+
+#### How to Add Project Context
+
+1. **Let Claude Code analyze your codebase** to generate project-specific context:
+
+```bash
+claude "Analyze this codebase and generate a project context section for an Engineering Manager persona. Include: tech stack, architecture patterns, testing approach, key challenges, performance requirements, and security considerations. Format it as markdown that I can add to the persona file."
+```
+
+2. **For Product Manager context**, try:
+
+```bash
+claude "Analyze this project and create a Product Manager context section including: user personas, business model, key pain points, competitive advantages, success metrics, and release process. Make it specific to this codebase."
+```
+
+3. **For QA Manager context**:
+
+```bash
+claude "Review this codebase and generate a QA context section covering: current test coverage, testing frameworks used, test environments, key areas to test, performance requirements, and what's missing from our quality strategy."
+```
+
+#### Where to Add Context
+
+Add the generated context to your persona files under the **"My Current Context"** section:
+
+```markdown
+## My Current Context
+
+### All Projects
+- [General standards that apply to all your work]
+
+### Your Project Name
+- **Tech Stack**: [Your specific technologies]
+- **Architecture**: [Your specific patterns]
+- **Testing**: [Your specific approach]
+- **Key Challenges**: [Your actual challenges]
+- **Performance**: [Your actual requirements]
+- **Security**: [Your specific considerations]
+```
+
+#### Example in Action
+
+**Before**: "Review this API design for best practices"
+**After**: "Review this Express.js API design considering our MongoDB Atlas setup, Auth0 integration, and requirement to handle 1000 concurrent users"
+
+The persona now knows your specific context and gives targeted advice!
 
 ### Create Custom Personas
 
@@ -279,12 +345,12 @@ npm test -- persona-scripts  # Run persona-specific tests
 ### Adding New Personas
 1. Create persona markdown file following existing format
 2. Add appropriate emoji icon in scripts
-3. Test with `npm run install-personas && npm run update-personas`
+3. Test with `npm run install-templates && npm run update-personas`
 4. Submit PR with new persona
 
 ### Improving Existing Personas
 1. Edit persona files in `personas/` directory
-2. Test changes with `npm run install-personas --force`
+2. Test changes with `npm run update-templates`
 3. Submit PR with improvements
 
 ### Development Setup
@@ -358,6 +424,6 @@ This project is licensed under the MIT License - see the [LICENSE](./LICENSE) fi
 
 **Ready to enhance your development workflow with AI expertise?**
 
-🚀 Run `npm run install-personas && npm run add-personas` to get started!
+🚀 Run `npm run install-templates && npm run add-personas` to get started!
 
-*Questions? [Open an issue](https://github.com/jasonhanna/multi-agent/issues) - we're here to help!*
+*Questions? Problems? [Open an issue](https://github.com/jasonhanna/multi-agent/issues) - feedback appreciated!*

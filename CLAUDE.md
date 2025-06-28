@@ -10,7 +10,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 npm install
 
 # Persona management commands
-npm run install-personas      # Copy personas to ~/.claude-agents/personas/
+npm run install-templates      # Copy personas to ~/.claude-agents/personas/
 npm run add-personas         # Add personas to user memory (~/.claude/CLAUDE.md)
 npm run update-personas      # Update existing persona section in memory
 npm run remove-personas      # Remove personas from memory
@@ -42,7 +42,7 @@ This project implements a **simplified memory-based persona system** for Claude 
    - Three default personas: Engineering Manager, Product Manager, QA Manager
    - Each follows a consistent format for easy customization
 
-2. **Installation Script** (`scripts/install-personas.js`)
+2. **Installation Script** (`scripts/install-templates.js`)
    - Copies persona files from repo to `~/.claude-agents/personas/`
    - Creates directory structure if needed
    - Preserves existing customizations (non-destructive)
