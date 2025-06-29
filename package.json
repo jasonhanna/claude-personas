@@ -3,9 +3,11 @@
   "version": "1.0.0",
   "description": "Add AI specialists to your development workflow using Claude Code memory imports",
   "type": "module",
-  "main": "scripts/install-personas.js",
+  "main": "scripts/install-templates.js",
   "scripts": {
-    "install-personas": "node scripts/install-personas.js",
+    "install-templates": "node scripts/install-templates.js",
+    "update-templates": "node scripts/install-templates.js update",
+    "remove-templates": "node scripts/install-templates.js remove",
     "add-personas": "node scripts/manage-personas.js add",
     "update-personas": "node scripts/manage-personas.js update",
     "remove-personas": "node scripts/manage-personas.js remove",

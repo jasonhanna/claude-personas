@@ -53,14 +53,14 @@ class PersonaStatus {
     if (!fs.existsSync(this.personasDir)) {
       console.log('   ❌ Personas not installed');
       console.log('   📍 Expected location: ~/.claude-agents/personas/');
-      console.log('   🔧 Run: npm run install-personas');
+      console.log('   🔧 Run: npm run install-templates');
       return;
     }
 
     const personas = this.getInstalledPersonas();
     if (personas.length === 0) {
       console.log('   ⚠️  Personas directory exists but is empty');
-      console.log('   🔧 Run: npm run install-personas');
+      console.log('   🔧 Run: npm run install-templates');
       return;
     }
 
@@ -273,7 +273,7 @@ class PersonaStatus {
     
     // Check if personas are installed
     if (!fs.existsSync(this.personasDir) || this.getInstalledPersonas().length === 0) {
-      console.log('   1. Install personas: npm run install-personas');
+      console.log('   1. Install personas: npm run install-templates');
       return;
     }
 
@@ -295,7 +295,7 @@ class PersonaStatus {
     
     const personas = this.getInstalledPersonas();
     if (personas.length === 0) {
-      console.log('   No personas installed. Run: npm run install-personas');
+      console.log('   No personas installed. Run: npm run install-templates');
       return;
     }
 

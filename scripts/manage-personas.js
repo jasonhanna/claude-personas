@@ -74,7 +74,7 @@ class PersonaManager {
     try {
       // Validate personas are installed
       if (!fs.existsSync(this.personasDir)) {
-        throw new Error('Personas not installed. Run: npm run install-personas');
+        throw new Error('Personas not installed. Run: npm run install-templates');
       }
 
       // Determine target file
@@ -359,8 +359,6 @@ function parseArgs() {
         console.error('   or: node scripts/manage-personas.js add --project /path/to/project');
         process.exit(1);
       }
-    } else if (arg === '--force') {
-      options.force = true;
     } else if (!action) {
       action = arg;
     }
