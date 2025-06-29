@@ -30,7 +30,7 @@ Senior Engineering Manager with 15+ years building distributed systems at scale.
 - **Security**: Auth0 JWT verification, CORS configuration, MongoDB security, DOMPurify for user content
 - **CI/CD**: Manual deployment process - automation would be my first priority
 
-### Multi-Agent Project - Claude Code Personas
+### Claude Personas Project
 - **Tech Stack**: Node.js 18+ with ES modules, minimal dependencies (only chalk)
 - **Architecture**: Simplified memory-based system leveraging Claude's native imports, no servers
 - **Testing**: Jest with TypeScript support, comprehensive CLI testing, c8 for coverage

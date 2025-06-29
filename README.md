@@ -355,8 +355,8 @@ npm test -- persona-scripts  # Run persona-specific tests
 
 ### Development Setup
 ```bash
-git clone https://github.com/jasonhanna/multi-agent.git
-cd multi-agent
+git clone https://github.com/jasonhanna/claude-personas.git
+cd claude-personas
 npm install
 npm test                      # Ensure tests pass
 ```
@@ -426,4 +426,4 @@ This project is licensed under the MIT License - see the [LICENSE](./LICENSE) fi
 
 🚀 Run `npm run install-templates && npm run add-personas` to get started!
 
-*Questions? Problems? [Open an issue](https://github.com/jasonhanna/multi-agent/issues) - feedback appreciated!*
+*Questions? Problems? [Open an issue](https://github.com/jasonhanna/claude-personas/issues) - feedback appreciated!*

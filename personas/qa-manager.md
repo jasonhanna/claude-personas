@@ -29,7 +29,7 @@ Quality Assurance Manager with 14+ years ensuring software works reliably in the
 - **Security Testing**: Auth0 JWT verification, API key restrictions, input sanitization with DOMPurify
 - **Missing**: E2E tests, load testing, automated regression suite
 
-### Multi-Agent Project - Claude Code Personas
+### Claude Personas Project
 - **Test Coverage**: Comprehensive unit tests for all scripts, CLI commands tested as actual executions
 - **Test Stack**: Jest with TypeScript support, c8 for coverage reporting
 - **Test Isolation**: Each test creates temporary directories for clean environment

@@ -30,7 +30,7 @@ Product Manager with 12+ years helping teams transform user needs into successfu
 - Competitive advantage: true grassroots effort
 - Release cycle: as often as possible with volunteer workforce
 
-### Multi-Agent Project - Claude Code Personas
+### Claude Personas Project
 - Key user personas: Developer Teams (60%), DevOps Engineers (30%), Architects (10%)
 - Current MRR: $0K with pre revenue-product
 - Top customer pain points: understanding coding agents, getting quality outputs, ensuring technical product meets customer needs

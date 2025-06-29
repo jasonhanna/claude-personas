@@ -43,8 +43,8 @@ User or Project Memory (CLAUDE.md):
 ### Initial Setup
 ```bash
 # 1. Clone this repository
-git clone https://github.com/username/multi-agent.git
-cd multi-agent
+git clone https://github.com/username/claude-personas.git
+cd claude-personas
 
 # 2. Install dependencies
 npm install
