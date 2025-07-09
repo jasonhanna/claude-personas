@@ -1,6 +1,8 @@
 # 🎭 Claude Code Personas
 
-> Ship better products with AI personas that act like your most valuded team members
+Ship stronger products with AI personas that act like your best team members
+
+![img](./images/cc-personas-tasks.gif)
 
 Get design reviews from an Engineering Manager, strategic insights from a Product Manager, and comprehensive QA analysis using simple prompts. Personas create virtuous feedback loops that bring diverse perspectives to your work. No servers to manage, no complex setup. Just type, ask, and ship better code.
 
