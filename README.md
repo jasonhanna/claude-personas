@@ -1,6 +1,6 @@
 # 🎭 Claude Code Personas
 
-Ship better products with AI personas that act like your best team members
+Ship stronger products with AI personas that act like your best team members
 
 ![img](./images/cc-personas-tasks.gif)
 
