@@ -1,10 +1,13 @@
 # 🎭 Claude Code Personas
 
-Ship stronger products with AI personas that act like your best team members
+[![Version](https://img.shields.io/badge/version-1.0.1-blue.svg)](./CHANGELOG.md)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE.md)
+
+Build stronger products with AI personas that act like your best team members
 
 ![img](./images/cc-personas-tasks.gif)
 
-Get design reviews from an Engineering Manager, strategic insights from a Product Manager, and comprehensive QA analysis using simple prompts. Personas create virtuous feedback loops that bring diverse perspectives to your work. No servers to manage, no complex setup. Just type, ask, and ship better code.
+Get design reviews from an Engineering Manager, strategic insights from a Product Manager, and comprehensive QA analysis using simple prompts. Personas create positive feedback loops that bring diverse perspectives to your work. No servers to manage, no complex setup. Just type, ask, and ship better code.
 
 ## ✨ What This Does
 
@@ -39,8 +42,8 @@ Claude Code automatically loads the persona's expertise and provides specialized
 
 ```bash
 # 1. Clone and install
-git clone https://github.com/jasonhanna/multi-agent.git
-cd multi-agent
+git clone https://github.com/jasonhanna/claude-personas.git
+cd claude-personas
 npm install
 
 # 2. Copy personas to your home directory (~/.claude-agents)
@@ -52,13 +55,13 @@ npm run add-personas
 
 That's it! 🎉 Now you can ask any persona for help in any Claude Code session.
 
-### Per Project Setup (Alternative)
+### Single Project Setup (alternative)
 
 Want personas available only in specific projects? Add them to project memory instead:
 
 ```bash
 # Add to a specific project
-npm run add-personas-to-project -- ./path/to/your/project
+npm run add-personas -- --project ./path/to/your/project
 ```
 
 ## 📖 Additional Examples
@@ -109,16 +112,17 @@ npm run personas-status       # Check installation and configuration
 npm run list-personas         # List available personas
 ```
 
-### Project-Specific Management
+### Per Project Management
 ```bash
-npm run update-personas-in-project -- /path/to/project
-npm run remove-personas-from-project -- /path/to/project
+npm run add-personas -- --project /path/to/project
+npm run update-personas -- --project /path/to/project
+npm run remove-personas -- --project /path/to/project
 ```
 
 ## 🎨 Customization
 
 ### Edit Existing Personas
-Once installed, are stored as markdown files in `~/.claude-agents/personas/`. Edit them to:
+Once installed, personas are stored as markdown files in `~/.claude-agents/personas/`. Edit them to:
 - Adjust personality and communication style
 - Add project-specific context
 - Modify expertise areas
@@ -129,7 +133,7 @@ Once installed, are stored as markdown files in `~/.claude-agents/personas/`. Ed
 open ~/.claude-agents/personas/engineering-manager.md
 ```
 
-### Adding Project-Specific Context
+### TIP: Add Project-Specific Context
 
 **Why This Matters**: Generic personas provide general guidance, but personas with your project's specific context give targeted, actionable advice that considers your actual architecture, tech stack, and constraints.
 
@@ -187,7 +191,7 @@ Add the generated context to your persona files under the **"My Current Context"
 
 The persona now knows your specific context and gives targeted advice!
 
-### Create Custom Personas
+### Create New Personas
 
 You can create your own personas for any role you need! Simply add new `.md` files to `~/.claude-agents/personas/` and they'll be automatically discovered.
 
@@ -365,9 +369,8 @@ npm test                      # Ensure tests pass
 
 ## 📚 Documentation
 
-- **[Simplified Design](./docs/SIMPLIFIED_DESIGN.md)** - Technical architecture overview
-- **[Contributing Guide](./CONTRIBUTING.md)** - How to contribute
-- **[All Documentation](./docs/)** - Complete documentation index
+- **[Simplified Design Approach](./docs/SIMPLIFIED_DESIGN.md)** - Technical architecture overview
+- **[Changelog](./CHANGELOG.md)** - Version history and updates
 
 ## 💡 Use Cases
 
@@ -414,7 +417,7 @@ Learn best practices and decision-making frameworks from experienced professiona
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](./LICENSE) file for details.
+This project is licensed under the [MIT License](./LICENSE.md).
 
 ## 🙏 Acknowledgments
 
@@ -428,4 +431,4 @@ This project is licensed under the MIT License - see the [LICENSE](./LICENSE) fi
 
 🚀 Run `npm run install-templates && npm run add-personas` to get started!
 
-*Questions? Problems? [Open an issue](https://github.com/jasonhanna/claude-personas/issues) - feedback appreciated!*
+*Questions? Problems? Feedback? [Open an issue](https://github.com/jasonhanna/claude-personas/issues)*
