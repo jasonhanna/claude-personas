@@ -1,5 +1,8 @@
 # 🎭 Claude Code Personas
 
+[![Version](https://img.shields.io/badge/version-1.0.1-blue.svg)](./CHANGELOG.md)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE.md)
+
 Build stronger products with AI personas that act like your best team members
 
 ![img](./images/cc-personas-tasks.gif)
@@ -367,6 +370,7 @@ npm test                      # Ensure tests pass
 ## 📚 Documentation
 
 - **[Simplified Design Approach](./docs/SIMPLIFIED_DESIGN.md)** - Technical architecture overview
+- **[Changelog](./CHANGELOG.md)** - Version history and updates
 
 ## 💡 Use Cases
 
