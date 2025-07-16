@@ -275,14 +275,16 @@ class PersonaManager {
     let templateContent;
     try {
       templateContent = fs.readFileSync(this.templateFile, 'utf8');
+      
+      // Validate template content
+      if (!this.validateTemplate(templateContent)) {
+        console.warn('⚠️  Template file is invalid, using basic template');
+        templateContent = this.getBasicTemplate();
+      }
     } catch (error) {
       // Fallback to basic template if file not found
       console.warn('⚠️  Template file not found, using basic template');
-      templateContent = `## System Personas
-
-When prompted to perform a task as a user or role, try to match to one of these memory files and apply their knowledge and context to your response. Use their persona name and role when providing summary feedback or creating comments.
-
-{{PERSONA_LIST}}`;
+      templateContent = this.getBasicTemplate();
     }
 
     // Replace placeholder with actual persona list
@@ -291,6 +293,42 @@ When prompted to perform a task as a user or role, try to match to one of these 
     return `${this.startMarker}
 ${sectionContent}
 ${this.endMarker}`;
+  }
+
+  /**
+   * Validate template content
+   */
+  validateTemplate(content) {
+    // Check for required placeholder
+    if (!content.includes('{{PERSONA_LIST}}')) {
+      console.warn('⚠️  Template validation failed: Missing {{PERSONA_LIST}} placeholder');
+      return false;
+    }
+
+    // Check for reasonable file size (prevent potential issues with corrupted files)
+    if (content.length > 50000) { // 50KB limit
+      console.warn('⚠️  Template validation failed: File too large (>50KB)');
+      return false;
+    }
+
+    // Check for basic markdown structure (should contain headers)
+    if (!content.includes('#')) {
+      console.warn('⚠️  Template validation failed: No markdown headers found');
+      return false;
+    }
+
+    return true;
+  }
+
+  /**
+   * Get basic fallback template
+   */
+  getBasicTemplate() {
+    return `## System Personas
+
+When prompted to perform a task as a user or role, try to match to one of these memory files and apply their knowledge and context to your response. Use their persona name and role when providing summary feedback or creating comments.
+
+{{PERSONA_LIST}}`;
   }
 
   /**
