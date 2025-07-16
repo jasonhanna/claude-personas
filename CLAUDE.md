@@ -84,3 +84,22 @@ When users ask "Ask the engineering manager to review this", Claude automaticall
 - Validates file permissions and existence
 - Provides clear, actionable error messages
 - Graceful fallbacks for missing or corrupted files
+
+## Development Workflow
+
+### Updating Personas
+When making changes to personas, follow this workflow:
+
+1. **Update template files** in the repo's `personas/` directory first
+   - These are the source of truth and tracked in git
+   - Make all edits to files like `personas/product-manager.md`
+
+2. **Use scripts to test functionality**
+   - Test copying with `npm run install-templates`
+   - Test CLAUDE.md imports with `npm run add-personas` or `npm run update-personas`
+
+3. **Avoid direct edits** to installed files in `~/.claude-agents/personas/`
+   - These should only be modified via the installation scripts
+   - Direct edits won't be tracked in git or shared with others
+
+This ensures changes are properly version controlled and the installation/update scripts work correctly.

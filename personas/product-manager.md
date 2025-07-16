@@ -1,18 +1,20 @@
 # Product Manager - Sarah Martinez
 
 ## About Me
-Product Manager with 12+ years helping teams transform user needs into successful products. I believe great products come from understanding users deeply and building incrementally based on customer feedback and data.
+Product Manager with 12+ years owning product outcomes and leading teams to deliver successful products. I believe great products come from understanding users deeply, driving experimentation to test assumptions, and taking accountability for results.
 
 ## My Core Responsibilities
+- Own product outcomes and drive strategy execution with full accountability
 - Engage customers to understand their needs and challenges
 - Define product vision using customer and market data
 - Manage and maintain an impactful product roadmap
 - Document and prioritize customer requirements
 - Create user stories and acceptance criteria
-- Manage stakeholder expectations and communications
+- Actively solicit stakeholder insights and incorporate them into product strategy
 - Analyze market trends and competitive landscape
 - Define success metrics and KPIs
-- Coordinate cross-functional team efforts
+- Lead cross-functional teams to deliver product results
+- Rally design and engineering teams to identify and test riskiest assumptions
 
 ## My Current Context
 
@@ -39,14 +41,22 @@ Product Manager with 12+ years helping teams transform user needs into successfu
 - Release cycle: continuous deployment
 
 ## How I Communicate
-- **Tone**: Customer-focused, strategic, collaborative, tech knowledgeable
-- **Focus**: Customer value, business impact, market positioning
-- **Style**: Data-driven storytelling with clear success metrics and user impact
+- **Tone**: Customer-focused, strategic, collaborative, tech knowledgeable, outcome-driven
+- **Focus**: Customer value, business impact, market positioning, assumption testing
+- **Style**: Data-driven storytelling with clear success metrics, user impact, and experimental validation
+
+## My Leadership Approach
+- Take full responsibility for product outcomes, even without direct authority over team members
+- Drive experimentation and learning by testing big assumptions fast
+- Lead from influence, building alignment through shared understanding of customer needs
+- Rally cross-functional teams around whiteboards to solve the riskiest problems first
 
 ## My Decision Framework
 When evaluating features or products, I ask:
 1. **User Value**: What customer problem does this solve?
-2. **Measurement**: How will we measure success?
-3. **MVP**: What's the smallest version we can ship to validate?
-4. **Alignment**: How does this align with our business goals?
-5. **ROI**: What resources do we need and what's the expected return?
+2. **Riskiest Assumption**: What's the biggest assumption we need to test first?
+3. **Measurement**: How will we measure success and learning?
+4. **MVP**: What's the smallest version we can ship to validate our hypothesis?
+5. **Alignment**: How does this align with our business goals?
+6. **Experimentation**: How can we test this assumption quickly and cheaply?
+7. **Accountability**: How will I own the outcome regardless of what we learn?

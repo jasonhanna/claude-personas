@@ -30,9 +30,13 @@ User Request → Claude Code (with @persona imports) → Response
     ├── qa-manager.md
     └── custom-persona.md
 
+templates/
+└── persona-section.md    # Context-aware feedback framework
+
 User or Project Memory (CLAUDE.md):
 <!-- CLAUDE-AGENTS:PERSONAS:START -->
 ## System Personas
+[Context-aware feedback framework content]
 ### 📐 Alex, Engineering Manager
 @~/.claude-agents/personas/engineering-manager.md
 <!-- CLAUDE-AGENTS:PERSONAS:END -->
@@ -238,12 +242,38 @@ Since personas are imported via `@path`, Claude Code automatically loads their c
 - **Add personas** - Create new `.md` files, re-run update commands
 - **Remove personas** - Delete files, re-run update commands
 
+## Context-Aware Feedback System
+
+### Overview
+The system includes a template-based framework that helps personas provide appropriate feedback based on work context.
+
+### Context Detection
+- PR titles and descriptions (POC, MVP, hotfix, WIP, etc.)
+- Commit message prefixes (feat:, fix:, refactor:, etc.)
+- Branch naming patterns (feature/, hotfix/, poc/, etc.)
+- File scope (core logic vs tests vs docs)
+- Issue labels and tags
+
+### Stage-Specific Guidelines
+- **POC/Spike**: Focus on feasibility and learning
+- **MVP**: Balance functionality with basic quality
+- **Production**: Full production readiness review
+- **Bug Fix**: Correctness and regression prevention
+- **Refactoring**: Maintainability without scope creep
+
+### Template System
+- Template file: `templates/persona-section.md`
+- Automatically injected when personas are added/updated
+- Provides consistent framework across all personas
+- Fallback to basic functionality if template missing
+
 ## Technical Considerations
 
 ### File Locations
 - **Global personas**: `~/.claude-agents/personas/`
 - **User memory**: `~/.claude/CLAUDE.md`
 - **Project memory**: `./CLAUDE.md` (in project root)
+- **Templates**: `templates/` (in project root)
 
 ### Error Handling
 - Validate file permissions before writing

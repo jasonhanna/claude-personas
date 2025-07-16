@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2025-01-16
+
+### Added
+- Context-aware feedback framework that automatically detects work stage (POC, MVP, Production, Bug Fix, etc.)
+- Template system for persona section in CLAUDE.md with comprehensive feedback guidelines
+- Automatic context detection from PR titles, commit messages, branch names, and issue labels
+- Stage-specific review guidelines to provide appropriate feedback for each development phase
+- Feedback calibration examples showing do's and don'ts for different contexts
+- Tests for template functionality and context-aware content
+
+### Changed
+- Product Manager persona updated with stronger leadership positioning and ownership focus
+- manage-personas.js now uses template file for generating persona sections
+- Personas now actively solicit stakeholder insights rather than just managing expectations
+- Enhanced decision frameworks with emphasis on experimentation and assumption testing
+
 ## [1.0.1] - 2025-01-09
 
 ### Fixed
@@ -39,6 +55,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Simplified architecture from MCP server-based to memory import system
 - Removed complex server infrastructure in favor of direct file imports
 
-[Unreleased]: https://github.com/jasonhanna/claude-personas/compare/v1.0.1...HEAD
+[Unreleased]: https://github.com/jasonhanna/claude-personas/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/jasonhanna/claude-personas/compare/v1.0.1...v1.1.0
 [1.0.1]: https://github.com/jasonhanna/claude-personas/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/jasonhanna/claude-personas/releases/tag/v1.0.0

@@ -19,6 +19,7 @@ class PersonaManager {
   constructor() {
     this.personasDir = path.join(os.homedir(), '.claude-agents', 'personas');
     this.userMemoryFile = path.join(os.homedir(), '.claude', 'CLAUDE.md');
+    this.templateFile = path.join(__dirname, '..', 'templates', 'persona-section.md');
     
     // Delimiters for managing persona sections
     this.startMarker = '<!-- CLAUDE-AGENTS:PERSONAS:START -->';
@@ -263,20 +264,71 @@ class PersonaManager {
   }
 
   /**
-   * Generate the complete persona section
+   * Generate the complete persona section using template
    */
   generatePersonaSection(personas) {
     const personaLines = personas.map(persona => 
       `### ${persona.icon} ${persona.name}, ${persona.role}\n@~/.claude-agents/personas/${persona.filename}.md`
     ).join('\n\n');
 
+    // Read template file
+    let templateContent;
+    try {
+      templateContent = fs.readFileSync(this.templateFile, 'utf8');
+      
+      // Validate template content
+      if (!this.validateTemplate(templateContent)) {
+        console.warn('⚠️  Template file is invalid, using basic template');
+        templateContent = this.getBasicTemplate();
+      }
+    } catch (error) {
+      // Fallback to basic template if file not found
+      console.warn('⚠️  Template file not found, using basic template');
+      templateContent = this.getBasicTemplate();
+    }
+
+    // Replace placeholder with actual persona list
+    const sectionContent = templateContent.replace('{{PERSONA_LIST}}', personaLines);
+
     return `${this.startMarker}
-## System Personas
+${sectionContent}
+${this.endMarker}`;
+  }
+
+  /**
+   * Validate template content
+   */
+  validateTemplate(content) {
+    // Check for required placeholder
+    if (!content.includes('{{PERSONA_LIST}}')) {
+      console.warn('⚠️  Template validation failed: Missing {{PERSONA_LIST}} placeholder');
+      return false;
+    }
+
+    // Check for reasonable file size (prevent potential issues with corrupted files)
+    if (content.length > 50000) { // 50KB limit
+      console.warn('⚠️  Template validation failed: File too large (>50KB)');
+      return false;
+    }
+
+    // Check for basic markdown structure (should contain headers)
+    if (!content.includes('#')) {
+      console.warn('⚠️  Template validation failed: No markdown headers found');
+      return false;
+    }
+
+    return true;
+  }
+
+  /**
+   * Get basic fallback template
+   */
+  getBasicTemplate() {
+    return `## System Personas
 
 When prompted to perform a task as a user or role, try to match to one of these memory files and apply their knowledge and context to your response. Use their persona name and role when providing summary feedback or creating comments.
 
-${personaLines}
-${this.endMarker}`;
+{{PERSONA_LIST}}`;
   }
 
   /**

@@ -53,6 +53,12 @@ describe('Persona Scripts CLI', () => {
 
   function createTestPersonas() {
     const sourcePersonasDir = path.join(__dirname, '..', 'personas');
+    const templateDir = path.join(__dirname, '..', 'templates');
+    
+    // Ensure template directory exists
+    if (!fs.existsSync(templateDir)) {
+      fs.mkdirSync(templateDir, { recursive: true });
+    }
     
     // Check if real personas exist, otherwise create test ones
     if (fs.existsSync(sourcePersonasDir)) {
@@ -216,6 +222,146 @@ describe('Persona Scripts CLI', () => {
       expect(content).toContain('@~/.claude-agents/personas/engineering-manager.md');
     });
 
+    test('should include context-aware feedback framework from template', () => {
+      const result = runScript('manage-personas.js', ['add']);
+      
+      expect(result.success).toBe(true);
+      
+      const content = fs.readFileSync(testUserMemory, 'utf8');
+      
+      // Verify context-aware content is included
+      expect(content).toContain('Context-Aware Feedback Protocol');
+      expect(content).toContain('PR/commit keywords');
+      expect(content).toContain('Context-Specific Review Guidelines');
+      expect(content).toContain('Proof of Concept/Spike/Experiment');
+      expect(content).toContain('Production Feature');
+      expect(content).toContain('Bug Fix/Hotfix');
+      expect(content).toContain('Feedback Calibration Examples');
+    });
+
+    test('should use fallback template when template file is missing', () => {
+      // Temporarily rename template file
+      const templatePath = path.join(__dirname, '..', 'templates', 'persona-section.md');
+      const backupPath = templatePath + '.backup';
+      
+      if (fs.existsSync(templatePath)) {
+        fs.renameSync(templatePath, backupPath);
+      }
+      
+      try {
+        const result = runScript('manage-personas.js', ['add']);
+        
+        expect(result.success).toBe(true);
+        expect(result.output).toContain('Adding personas to memory');
+        
+        const content = fs.readFileSync(testUserMemory, 'utf8');
+        expect(content).toContain('System Personas');
+        expect(content).toContain('@~/.claude-agents/personas/');
+        // Should not contain context-aware content when using fallback
+        expect(content).not.toContain('Context-Aware Feedback Protocol');
+      } finally {
+        // Restore template file
+        if (fs.existsSync(backupPath)) {
+          fs.renameSync(backupPath, templatePath);
+        }
+      }
+    });
+
+    test('should use fallback template when template file is invalid', () => {
+      // Create invalid template file (missing placeholder)
+      const templatePath = path.join(__dirname, '..', 'templates', 'persona-section.md');
+      const backupPath = templatePath + '.backup';
+      const invalidTemplate = '# Invalid Template\nThis template is missing the required placeholder.';
+      
+      // Backup original and create invalid template
+      if (fs.existsSync(templatePath)) {
+        fs.renameSync(templatePath, backupPath);
+      }
+      fs.writeFileSync(templatePath, invalidTemplate);
+      
+      try {
+        const result = runScript('manage-personas.js', ['add']);
+        
+        expect(result.success).toBe(true);
+        
+        const content = fs.readFileSync(testUserMemory, 'utf8');
+        expect(content).toContain('System Personas');
+        expect(content).toContain('@~/.claude-agents/personas/');
+        // Should not contain context-aware content when using fallback
+        expect(content).not.toContain('Context-Aware Feedback Protocol');
+      } finally {
+        // Clean up and restore original template
+        if (fs.existsSync(templatePath)) {
+          fs.unlinkSync(templatePath);
+        }
+        if (fs.existsSync(backupPath)) {
+          fs.renameSync(backupPath, templatePath);
+        }
+      }
+    });
+
+    test('should use fallback template when template file is too large', () => {
+      // Create oversized template file
+      const templatePath = path.join(__dirname, '..', 'templates', 'persona-section.md');
+      const backupPath = templatePath + '.backup';
+      const largeTemplate = '# Large Template\n{{PERSONA_LIST}}\n' + 'x'.repeat(60000); // >50KB
+      
+      // Backup original and create large template
+      if (fs.existsSync(templatePath)) {
+        fs.renameSync(templatePath, backupPath);
+      }
+      fs.writeFileSync(templatePath, largeTemplate);
+      
+      try {
+        const result = runScript('manage-personas.js', ['add']);
+        
+        expect(result.success).toBe(true);
+        
+        const content = fs.readFileSync(testUserMemory, 'utf8');
+        expect(content).toContain('System Personas');
+        expect(content).not.toContain('Context-Aware Feedback Protocol');
+      } finally {
+        // Clean up and restore original template
+        if (fs.existsSync(templatePath)) {
+          fs.unlinkSync(templatePath);
+        }
+        if (fs.existsSync(backupPath)) {
+          fs.renameSync(backupPath, templatePath);
+        }
+      }
+    });
+
+    test('should use fallback template when template has no markdown headers', () => {
+      // Create template without markdown headers
+      const templatePath = path.join(__dirname, '..', 'templates', 'persona-section.md');
+      const backupPath = templatePath + '.backup';
+      const noHeaderTemplate = 'Plain text template with {{PERSONA_LIST}} but no headers';
+      
+      // Backup original and create headerless template
+      if (fs.existsSync(templatePath)) {
+        fs.renameSync(templatePath, backupPath);
+      }
+      fs.writeFileSync(templatePath, noHeaderTemplate);
+      
+      try {
+        const result = runScript('manage-personas.js', ['add']);
+        
+        expect(result.success).toBe(true);
+        
+        const content = fs.readFileSync(testUserMemory, 'utf8');
+        expect(content).toContain('System Personas');
+        expect(content).not.toContain('Context-Aware Feedback Protocol');
+      } finally {
+        // Clean up and restore original template
+        if (fs.existsSync(templatePath)) {
+          fs.unlinkSync(templatePath);
+        }
+        if (fs.existsSync(backupPath)) {
+          fs.renameSync(backupPath, templatePath);
+        }
+      }
+    });
+
     test('should add personas to project memory', () => {
       const result = runScript('manage-personas.js', ['add', '--project', testProjectDir]);
       
@@ -249,6 +395,26 @@ describe('Persona Scripts CLI', () => {
       const updatedContent = fs.readFileSync(testUserMemory, 'utf8');
       expect(updatedContent).toContain('System Personas');
       expect(updatedContent).not.toContain('Modified Personas');
+    });
+
+    test('should preserve context-aware content on update', () => {
+      // Add personas first
+      runScript('manage-personas.js', ['add']);
+      
+      // Verify initial content has context-aware framework
+      const initialContent = fs.readFileSync(testUserMemory, 'utf8');
+      expect(initialContent).toContain('Context-Aware Feedback Protocol');
+      
+      // Update
+      const result = runScript('manage-personas.js', ['update']);
+      
+      expect(result.success).toBe(true);
+      
+      // Verify context-aware content is still present after update
+      const updatedContent = fs.readFileSync(testUserMemory, 'utf8');
+      expect(updatedContent).toContain('Context-Aware Feedback Protocol');
+      expect(updatedContent).toContain('Context-Specific Review Guidelines');
+      expect(updatedContent).toContain('Feedback Calibration Examples');
     });
 
     test('should remove persona section', () => {
