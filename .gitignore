@@ -32,3 +32,4 @@ Thumbs.db
 test-*/
 poc/
 *.mcp.json
+feedback/

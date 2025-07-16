@@ -19,6 +19,7 @@ class PersonaManager {
   constructor() {
     this.personasDir = path.join(os.homedir(), '.claude-agents', 'personas');
     this.userMemoryFile = path.join(os.homedir(), '.claude', 'CLAUDE.md');
+    this.templateFile = path.join(__dirname, '..', 'templates', 'persona-section.md');
     
     // Delimiters for managing persona sections
     this.startMarker = '<!-- CLAUDE-AGENTS:PERSONAS:START -->';
@@ -263,19 +264,32 @@ class PersonaManager {
   }
 
   /**
-   * Generate the complete persona section
+   * Generate the complete persona section using template
    */
   generatePersonaSection(personas) {
     const personaLines = personas.map(persona => 
       `### ${persona.icon} ${persona.name}, ${persona.role}\n@~/.claude-agents/personas/${persona.filename}.md`
     ).join('\n\n');
 
-    return `${this.startMarker}
-## System Personas
+    // Read template file
+    let templateContent;
+    try {
+      templateContent = fs.readFileSync(this.templateFile, 'utf8');
+    } catch (error) {
+      // Fallback to basic template if file not found
+      console.warn('⚠️  Template file not found, using basic template');
+      templateContent = `## System Personas
 
 When prompted to perform a task as a user or role, try to match to one of these memory files and apply their knowledge and context to your response. Use their persona name and role when providing summary feedback or creating comments.
 
-${personaLines}
+{{PERSONA_LIST}}`;
+    }
+
+    // Replace placeholder with actual persona list
+    const sectionContent = templateContent.replace('{{PERSONA_LIST}}', personaLines);
+
+    return `${this.startMarker}
+${sectionContent}
 ${this.endMarker}`;
   }
 

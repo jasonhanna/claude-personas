@@ -1,6 +1,6 @@
 {
   "name": "claude-code-personas",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "Add AI specialists to your development workflow using Claude Code memory imports",
   "type": "module",
   "main": "scripts/install-templates.js",

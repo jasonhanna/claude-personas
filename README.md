@@ -1,6 +1,6 @@
 # 🎭 Claude Code Personas
 
-[![Version](https://img.shields.io/badge/version-1.0.1-blue.svg)](./CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.1.0-blue.svg)](./CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE.md)
 
 Build stronger products with AI personas that act like your best team members
@@ -30,6 +30,17 @@ claude "Ask the QA manager to design a comprehensive test plan"
 ```
 
 Claude Code automatically loads the persona's expertise and provides specialized guidance based on their role and experience.
+
+### 🎯 Context-Aware Feedback
+
+Personas automatically detect work context and adjust their feedback accordingly:
+- **POC/Spike**: Focus on feasibility and learning, not production concerns
+- **MVP**: Balance functionality with basic quality gates
+- **Production**: Full production readiness review
+- **Bug Fix**: Target correctness and regression prevention
+- **Refactoring**: Emphasize maintainability without scope creep
+
+The system examines PR titles, commit messages, branch names, and file scope to provide appropriate feedback for each development stage.
 
 ## 🚀 Quick Start
 
@@ -324,6 +335,13 @@ Expert Response with Role-Specific Guidance
 - Personas load automatically when referenced
 - Works with all existing Claude Code features
 
+### Context-Aware Feedback Protocol
+When personas are added to your memory, they include a comprehensive framework that:
+- **Detects work context** from PR titles, commit messages, branch names, and issue labels
+- **Calibrates feedback** appropriately (e.g., no production concerns for POCs)
+- **Provides stage-specific guidance** for different development phases
+- **Asks for clarification** when context is unclear ("What stage is this work in?")
+
 ### File Structure
 ```
 ~/.claude-agents/personas/     # Persona definitions
@@ -334,6 +352,9 @@ Expert Response with Role-Specific Guidance
 ~/.claude/CLAUDE.md           # User memory (global)
 OR
 ./CLAUDE.md                   # Project memory (local)
+
+templates/                    # Template files
+└── persona-section.md       # Context-aware feedback framework
 ```
 
 ## 🧪 Testing
